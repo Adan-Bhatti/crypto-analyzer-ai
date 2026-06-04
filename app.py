@@ -1,0 +1,231 @@
+"""
+CryptoAI Analyzer — Streamlit Entry Point
+============================================
+Main application entry point. Configures the page, renders the sidebar
+navigation, and routes to the appropriate page module.
+
+Run with::
+
+    streamlit run app.py
+"""
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+# Ensure the project root is on the Python path
+PROJECT_ROOT = Path(__file__).resolve().parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+import streamlit as st
+
+from utils.config import PAGE_LABELS
+
+
+# =============================================================================
+# Page Configuration
+# =============================================================================
+
+st.set_page_config(
+    page_title="CryptoAI Analyzer",
+    page_icon="📈",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+# =============================================================================
+# Custom CSS for Global Styling
+# =============================================================================
+
+st.markdown(
+    """
+    <style>
+        /* Dark background override */
+        .stApp {
+            background-color: #0E1117;
+        }
+
+        /* Sidebar styling */
+        section[data-testid="stSidebar"] {
+            background-color: #0a0a1a;
+            border-right: 1px solid #222;
+        }
+
+        /* Metric card styling */
+        div[data-testid="stMetric"] {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        /* Button styling */
+        .stButton > button[kind="primary"] {
+            background: linear-gradient(135deg, #00D4AA, #00B894);
+            border: none;
+            color: #000;
+            font-weight: 600;
+        }
+
+        /* Dataframe styling */
+        .stDataFrame {
+            border-radius: 8px;
+        }
+
+        /* Tab styling */
+        .stTabs [data-baseweb="tab"] {
+            color: #aaa;
+        }
+
+        .stTabs [data-baseweb="tab"][aria-selected="true"] {
+            color: #00D4AA;
+        }
+
+        /* Hide the default Streamlit menu and footer */
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+
+# =============================================================================
+# Sidebar Navigation
+# =============================================================================
+
+from frontend.components.sidebar import render_sidebar
+
+sidebar_config = render_sidebar()
+
+
+# =============================================================================
+# Navigation Router
+# =============================================================================
+
+# Page selection via sidebar radio
+selected_page = st.sidebar.radio(
+    "Navigate",
+    PAGE_LABELS,
+    key="main_navigation",
+    label_visibility="collapsed",
+)
+
+
+# =============================================================================
+# Handle "Run Analysis" from Sidebar
+# =============================================================================
+
+if sidebar_config["run_analysis"]:
+    from backend.pipeline import CryptoPipeline
+
+    with st.spinner("🔄 Running analysis pipeline... This may take a moment."):
+        try:
+            # Get or create pipeline instance
+            if "pipeline_instance" not in st.session_state:
+                st.session_state["pipeline_instance"] = CryptoPipeline()
+
+            pipeline = st.session_state["pipeline_instance"]
+
+            # Determine data source and run pipeline
+            if sidebar_config["data_source"] == "csv" and sidebar_config["csv_file"] is not None:
+                # Save uploaded CSV to a temp location
+                import tempfile
+                import os
+
+                temp_dir = PROJECT_ROOT / "data" / "sample"
+                temp_dir.mkdir(parents=True, exist_ok=True)
+                temp_path = str(temp_dir / "uploaded_data.csv")
+
+                with open(temp_path, "wb") as f:
+                    f.write(sidebar_config["csv_file"].getvalue())
+
+                result = pipeline.run_full_pipeline(
+                    symbol=sidebar_config["symbol"],
+                    data_source="csv",
+                    csv_path=temp_path,
+                    retrain=sidebar_config["retrain"],
+                )
+            else:
+                result = pipeline.run_full_pipeline(
+                    symbol=sidebar_config["symbol"],
+                    data_source="api",
+                    retrain=sidebar_config["retrain"],
+                )
+
+            # Store result in session state
+            st.session_state["pipeline_result"] = result
+
+            # Track prediction history
+            if result.prediction:
+                history = st.session_state.get("prediction_history", [])
+                history.append({
+                    "bullish_prob": result.prediction.bullish_prob,
+                    "bearish_prob": result.prediction.bearish_prob,
+                    "rf_prediction": result.prediction.rf_prediction,
+                    "lr_prediction": result.prediction.lr_prediction,
+                })
+                st.session_state["prediction_history"] = history[-50:]
+
+            # Track recommendation history
+            if result.recommendation:
+                rec = result.recommendation
+                rec_history = st.session_state.get("recommendation_history", [])
+                rec_history.append({
+                    "timestamp": rec.timestamp.isoformat(),
+                    "action": rec.action,
+                    "confidence": rec.confidence,
+                    "bullish_prob": rec.bullish_prob,
+                    "bearish_prob": rec.bearish_prob,
+                    "risk_level": rec.risk_level,
+                    "stop_loss": rec.suggested_stop_loss,
+                    "take_profit": rec.suggested_take_profit,
+                })
+                st.session_state["recommendation_history"] = rec_history[-50:]
+
+            if result.errors:
+                for error in result.errors:
+                    st.error(f"❌ {error}")
+            else:
+                st.success("✅ Analysis completed successfully!")
+
+            if result.warnings:
+                for warning in result.warnings:
+                    st.warning(f"⚠️ {warning}")
+
+        except Exception as exc:
+            st.error(f"❌ Analysis failed: {exc}")
+
+
+# =============================================================================
+# Page Routing
+# =============================================================================
+
+if selected_page == PAGE_LABELS[0]:  # 🏠 Project Overview
+    from frontend.pages.page_overview import render_page
+    render_page()
+
+elif selected_page == PAGE_LABELS[1]:  # 📡 Live Market Dashboard
+    from frontend.pages.page_live_market import render_page
+    render_page()
+
+elif selected_page == PAGE_LABELS[2]:  # 📊 Historical Analysis
+    from frontend.pages.page_historical import render_page
+    render_page()
+
+elif selected_page == PAGE_LABELS[3]:  # 🔮 Prediction Dashboard
+    from frontend.pages.page_prediction import render_page
+    render_page()
+
+elif selected_page == PAGE_LABELS[4]:  # ⚠️ Risk Classification
+    from frontend.pages.page_risk import render_page
+    render_page()
+
+elif selected_page == PAGE_LABELS[5]:  # 💡 Buy/Sell/Hold Engine
+    from frontend.pages.page_recommendation import render_page
+    render_page()
+
+elif selected_page == PAGE_LABELS[6]:  # 📈 Model Performance
+    from frontend.pages.page_performance import render_page
+    render_page()
