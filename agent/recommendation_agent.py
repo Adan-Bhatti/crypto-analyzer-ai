@@ -234,7 +234,7 @@ class RecommendationAgent:
         )
 
         logger.info(
-            "Recommendation: %s (confidence=%s) | Bull=%.1%% Bear=%.1%% Risk=%s",
+            "Recommendation: %s (confidence=%s) | Bull=%.1f%% Bear=%.1f%% Risk=%s",
             result.action, result.confidence,
             bullish_prob * 100, bearish_prob * 100, risk_level,
         )
