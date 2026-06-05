@@ -115,6 +115,7 @@ class CryptoPipeline:
         # Pipeline state
         self._status: str = "idle"
         self._feature_names: list[str] = []
+        self.current_symbol: str = "BTCUSDT"
 
     # -----------------------------------------------------------------
     # Full Pipeline
@@ -142,6 +143,7 @@ class CryptoPipeline:
         start_time = time.time()
         result = PipelineResult()
         self._status = "running"
+        self.current_symbol = symbol
 
         try:
             # Step 1: Load data
@@ -237,8 +239,14 @@ class CryptoPipeline:
             if len(available_features) < 2:
                 return RiskResult(risk_level="Unknown")
 
-            # Fit the K-Means model
-            self.kmeans.fit(df)
+            # Load or Fit the K-Means model
+            symbol_safe = getattr(self, "current_symbol", "btcusdt").lower()
+            km_name = f"kmeans_{symbol_safe}"
+            
+            if self.model_manager.model_exists(km_name):
+                self.kmeans.load(self.model_manager._get_model_path(km_name))
+            else:
+                self.kmeans.fit(df)
 
             # Predict risk for the most recent data point
             last_row = df.iloc[[-1]]
@@ -315,12 +323,18 @@ class CryptoPipeline:
         X_train, X_test = X[:split_idx], X[split_idx:]
         y_train, y_test = y[:split_idx], y[split_idx:]
 
+        # --- Model Naming ---
+        symbol_safe = getattr(self, "current_symbol", "btcusdt").lower()
+        rf_name = f"random_forest_{symbol_safe}"
+        lr_name = f"logistic_regression_{symbol_safe}"
+        xgb_name = f"xgboost_{symbol_safe}"
+
         # --- Train or load Random Forest ---
         if retrain or not self.rf_model.is_trained:
             try:
-                if not retrain and self.model_manager.model_exists("random_forest"):
+                if not retrain and self.model_manager.model_exists(rf_name):
                     self.rf_model.load(
-                        self.model_manager._get_model_path("random_forest")
+                        self.model_manager._get_model_path(rf_name)
                     )
                 else:
                     self.rf_model.train(X_train, y_train)
@@ -331,9 +345,9 @@ class CryptoPipeline:
         # --- Train or load Logistic Regression ---
         if retrain or not self.lr_model.is_trained:
             try:
-                if not retrain and self.model_manager.model_exists("logistic_regression"):
+                if not retrain and self.model_manager.model_exists(lr_name):
                     self.lr_model.load(
-                        self.model_manager._get_model_path("logistic_regression")
+                        self.model_manager._get_model_path(lr_name)
                     )
                 else:
                     self.lr_model.train(X_train, y_train)
@@ -344,9 +358,9 @@ class CryptoPipeline:
         # --- Train or load XGBoost ---
         if retrain or not self.xgb_model.is_trained:
             try:
-                if not retrain and self.model_manager.model_exists("xgboost"):
+                if not retrain and self.model_manager.model_exists(xgb_name):
                     self.xgb_model.load(
-                        self.model_manager._get_model_path("xgboost")
+                        self.model_manager._get_model_path(xgb_name)
                     )
                 else:
                     self.xgb_model.train(X_train, y_train)
