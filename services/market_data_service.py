@@ -158,7 +158,7 @@ class MarketDataService:
 
     def get_24hr_stats(self, symbol: str) -> dict:
         """
-        Get 24-hour market statistics. Binance-only with graceful fallback.
+        Get 24-hour market statistics. Tries Binance, falls back to Yahoo Finance.
 
         Args:
             symbol: Binance-style symbol.
@@ -169,7 +169,36 @@ class MarketDataService:
         try:
             return self.binance.get_24hr_stats(symbol)
         except Exception as exc:
-            logger.warning("24hr stats unavailable for %s: %s", symbol, exc)
+            logger.warning("Binance 24hr stats unavailable for %s: %s. Falling back to Yahoo.", symbol, exc)
+            
+            try:
+                # Use Yahoo Finance historical data to calculate 24-hour stats
+                yahoo_ticker = YAHOO_TICKERS.get(symbol, symbol)
+                df = self.yahoo.get_historical(yahoo_ticker, period="5d", interval="1d")
+                
+                if len(df) >= 2:
+                    current_day = df.iloc[-1]
+                    prev_day = df.iloc[-2]
+                    
+                    last_price = float(current_day["close"])
+                    prev_close = float(prev_day["close"])
+                    price_change = last_price - prev_close
+                    price_change_pct = (price_change / prev_close * 100) if prev_close != 0 else 0.0
+                    
+                    return {
+                        "price_change": price_change,
+                        "price_change_pct": price_change_pct,
+                        "high": float(current_day["high"]),
+                        "low": float(current_day["low"]),
+                        "volume": float(current_day["volume"]),
+                        "last_price": last_price,
+                        "open_price": float(current_day["open"]),
+                        "timestamp": datetime.now(tz=timezone.utc),
+                    }
+            except Exception as yahoo_exc:
+                logger.error("Yahoo Finance 24hr stats also failed for %s: %s", symbol, yahoo_exc)
+
+            # Ultimate fallback if both APIs fail
             return {
                 "price_change": 0.0,
                 "price_change_pct": 0.0,
