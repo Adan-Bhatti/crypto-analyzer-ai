@@ -174,22 +174,44 @@ def render_page() -> None:
     st.subheader("📊 Live Project Stats")
 
     result = st.session_state.get("pipeline_result")
+    
+    from pathlib import Path
+
+    # 1. Count Total Data Points from saved CSVs
+    data_points = 0
+    try:
+        csv_files = list(Path("data/datasets").glob("*.csv"))
+        for f in csv_files:
+            with open(f, 'r', encoding='utf-8') as file:
+                data_points += sum(1 for _ in file) - 1
+    except Exception:
+        pass
+
+    # Fallback to session state if no local CSVs are found
+    if data_points <= 0:
+        if result and hasattr(result, "raw_df") and not result.raw_df.empty:
+            data_points = len(result.raw_df)
+
+    # 2. Features Engineered is fixed at 36 by the feature engineer module
+    features = 36
+
+    # 3. Count Models Trained from the saved directory
+    try:
+        saved_models = list(Path("models/saved").glob("*.joblib"))
+        models_trained = len(saved_models)
+    except Exception:
+        models_trained = 0
 
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
-        rows = len(result.raw_df) if result and hasattr(result, "raw_df") and not result.raw_df.empty else 0
-        st.metric("Data Points Loaded", f"{rows:,}")
+        st.metric("Data Points Available", f"{data_points:,}")
 
     with col2:
-        features = len(result.engineered_df.columns) if result and hasattr(result, "engineered_df") and not result.engineered_df.empty else 0
         st.metric("Features Engineered", features)
 
     with col3:
-        models_available = 0
-        if result and hasattr(result, "prediction") and result.prediction:
-            models_available = 2  # RF + LR
-        st.metric("Models Trained", models_available)
+        st.metric("Models Trained", models_trained)
 
     with col4:
         st.metric("Supported Coins", "7")
