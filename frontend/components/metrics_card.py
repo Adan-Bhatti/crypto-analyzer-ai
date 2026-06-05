@@ -40,11 +40,7 @@ def metric_card(
 
     delta_html = ""
     if delta:
-        delta_html = f"""
-            <div style='font-size: 0.85em; color: {delta_color}; margin-top: 4px;'>
-                {delta}
-            </div>
-        """
+        delta_html = f"<div style='font-size: 0.85em; color: {delta_color}; margin-top: 4px;'>{delta}</div>"
 
     st.markdown(
         f"""
