@@ -247,14 +247,16 @@ class DataLoader:
         Raises:
             DataLoadError: If all sources fail.
         """
-        # Try Yahoo Finance first — gives maximum history
+        # Try Yahoo Finance first — limit to 2y for live app memory management
+        # (This prevents Streamlit Community Cloud 1GB RAM crashes while
+        # still providing enough data for 200-day moving averages).
         yahoo_ticker = YAHOO_TICKERS.get(symbol)
         if yahoo_ticker:
             try:
-                return self.load_max_history(yahoo_ticker)
+                return self.load_from_yahoo(yahoo_ticker, period="2y")
             except (DataLoadError, Exception) as yahoo_err:
                 logger.warning(
-                    "Yahoo Finance MAX failed for %s, falling back to Binance. Error: %s",
+                    "Yahoo Finance failed for %s, falling back to Binance. Error: %s",
                     symbol, yahoo_err,
                 )
 
