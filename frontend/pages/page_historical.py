@@ -74,14 +74,20 @@ def render_page() -> None:
     st.markdown("---")
 
     # ── OHLCV Candlestick Chart ───────────────────────────────────
-    st.subheader("🕯️ OHLCV Candlestick Chart")
+    st.subheader(
+        "🕯️ OHLCV Candlestick Chart",
+        help="Standard trading chart showing Open, High, Low, and Close prices. Green candles indicate the price closed higher than it opened; Red indicates it closed lower."
+    )
     fig = candlestick_chart(df, title="Historical OHLCV")
     st.plotly_chart(fig, use_container_width=True)
 
     st.markdown("---")
 
     # ── Moving Averages Overlay ───────────────────────────────────
-    st.subheader("📈 Moving Averages")
+    st.subheader(
+        "📈 Moving Averages",
+        help="Lines that smooth out past price data to show the general trend. SMA is Simple Moving Average; EMA is Exponential Moving Average (which reacts faster to recent price changes)."
+    )
 
     ma_options = {
         "SMA 7": "sma_7",
@@ -109,7 +115,10 @@ def render_page() -> None:
     st.markdown("---")
 
     # ── RSI Chart ─────────────────────────────────────────────────
-    st.subheader("📉 RSI (Relative Strength Index)")
+    st.subheader(
+        "📉 RSI (Relative Strength Index)",
+        help="A momentum oscillator that measures the speed and change of price movements. Typically, a value > 70 is considered Overbought (price might drop) and < 30 is Oversold (price might rise)."
+    )
 
     fig_rsi = rsi_chart(df)
     st.plotly_chart(fig_rsi, use_container_width=True)
@@ -127,7 +136,10 @@ def render_page() -> None:
     st.markdown("---")
 
     # ── MACD Chart ────────────────────────────────────────────────
-    st.subheader("📊 MACD (Moving Average Convergence Divergence)")
+    st.subheader(
+        "📊 MACD (Moving Average Convergence Divergence)",
+        help="A trend-following momentum indicator that shows the relationship between two moving averages. When the MACD crosses above its signal line, it's often seen as a bullish signal."
+    )
 
     fig_macd = macd_chart(df)
     st.plotly_chart(fig_macd, use_container_width=True)
@@ -135,7 +147,10 @@ def render_page() -> None:
     st.markdown("---")
 
     # ── Bollinger Bands ───────────────────────────────────────────
-    st.subheader("📐 Bollinger Bands")
+    st.subheader(
+        "📐 Bollinger Bands",
+        help="Trendlines plotted two standard deviations away from a simple moving average. Prices touching the upper band might indicate overvaluation, while the lower band might indicate undervaluation."
+    )
 
     fig_bb = bollinger_chart(df)
     st.plotly_chart(fig_bb, use_container_width=True)
@@ -143,7 +158,10 @@ def render_page() -> None:
     st.markdown("---")
 
     # ── Correlation Heatmap ───────────────────────────────────────
-    st.subheader("🔥 Feature Correlation Matrix")
+    st.subheader(
+        "🔥 Feature Correlation Matrix",
+        help="A mathematical heatmap showing how related different indicators are to each other. 1.0 is a perfect positive correlation, 0 is no correlation, and -1.0 is a perfect negative correlation."
+    )
 
     # Select only relevant numeric columns for the heatmap
     feature_cols = [c for c in df.select_dtypes(include=[np.number]).columns

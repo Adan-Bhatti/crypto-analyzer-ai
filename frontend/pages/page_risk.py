@@ -80,7 +80,10 @@ def render_page() -> None:
     st.markdown("---")
 
     # ── 3D Cluster Visualization ──────────────────────────────────
-    st.subheader("🌐 K-Means Cluster Visualization (3D)")
+    st.subheader(
+        "🌐 K-Means Cluster Visualization (3D)",
+        help="A 3D scatter plot showing how market volatility, returns, and volume mathematically group together to form Low, Medium, and High risk conditions."
+    )
 
     if result.engineered_df is not None and not result.engineered_df.empty:
         df = result.engineered_df.copy()
@@ -104,7 +107,10 @@ def render_page() -> None:
     st.markdown("---")
 
     # ── Elbow Method ──────────────────────────────────────────────
-    st.subheader("📉 Elbow Method — Optimal k Selection")
+    st.subheader(
+        "📉 Elbow Method — Optimal k Selection",
+        help="A mathematical way to determine the ideal number of clusters. The 'elbow' or sharp bend in the line shows where adding more clusters stops significantly improving the model."
+    )
 
     col1, col2 = st.columns([2, 1])
 
@@ -139,7 +145,10 @@ def render_page() -> None:
     st.markdown("---")
 
     # ── Silhouette Score Display ──────────────────────────────────
-    st.subheader("📐 Clustering Quality — Silhouette Score")
+    st.subheader(
+        "📐 Clustering Quality — Silhouette Score",
+        help="Measures how well-separated the risk clusters are. A score closer to 1.0 means the clusters are perfectly distinct, while a score near 0 means they overlap heavily."
+    )
 
     import plotly.graph_objects as go
 
@@ -173,7 +182,10 @@ def render_page() -> None:
     st.markdown("---")
 
     # ── Cluster Centers Table ─────────────────────────────────────
-    st.subheader("📋 Cluster Centers")
+    st.subheader(
+        "📋 Cluster Centers",
+        help="The exact average values (centroids) of volatility, momentum, and volume for each of the identified risk clusters."
+    )
 
     if not risk.cluster_centers.empty:
         st.dataframe(
@@ -191,7 +203,10 @@ def render_page() -> None:
     st.markdown("---")
 
     # ── Risk Distribution Pie ─────────────────────────────────────
-    st.subheader("🥧 Risk Distribution")
+    st.subheader(
+        "🥧 Risk Distribution",
+        help="Shows how frequently the market has been in Low, Medium, or High risk states historically over the analyzed period."
+    )
 
     col1, col2 = st.columns([2, 1])
 
@@ -214,7 +229,10 @@ def render_page() -> None:
     st.markdown("---")
 
     # ── Historical Risk Timeline ──────────────────────────────────
-    st.subheader("📈 Historical Risk Level Timeline")
+    st.subheader(
+        "📈 Historical Risk Level Timeline",
+        help="Tracks how the mathematical risk profile of the market has shifted across Low, Medium, and High states over time."
+    )
 
     if result.engineered_df is not None and not result.engineered_df.empty:
         pipeline = st.session_state.get("pipeline_instance")

@@ -72,7 +72,10 @@ def render_page() -> None:
     st.markdown("---")
 
     # ── Probability Gauge ─────────────────────────────────────────
-    st.subheader("📊 Prediction Probability")
+    st.subheader(
+        "📊 Prediction Probability",
+        help="The XGBoost model's calculated probability that the next trading period will close higher (Bullish) or lower (Bearish)."
+    )
 
     col1, col2 = st.columns(2)
 
@@ -103,7 +106,10 @@ def render_page() -> None:
     st.markdown("---")
 
     # ── RF vs LR Comparison ───────────────────────────────────────
-    st.subheader("⚔️ Model Comparison: Random Forest vs Logistic Regression")
+    st.subheader(
+        "⚔️ Model Comparison: Random Forest vs Logistic Regression",
+        help="Compares the predictions of our complex ensemble model (Random Forest) against the linear baseline model (Logistic Regression)."
+    )
 
     import plotly.graph_objects as go
     from utils.config import CHART_TEMPLATE, BACKGROUND_COLOR
@@ -180,7 +186,10 @@ def render_page() -> None:
     st.markdown("---")
 
     # ── Feature Importance ────────────────────────────────────────
-    st.subheader("🏆 Feature Importance (Top 15)")
+    st.subheader(
+        "🏆 Feature Importance (Top 15)",
+        help="Shows which mathematical indicators (like RSI, MACD, or Moving Averages) the XGBoost model relied on most heavily to make this specific prediction."
+    )
 
     if not prediction.feature_importance.empty:
         fig_imp = feature_importance_bar(prediction.feature_importance, top_n=15)
@@ -191,7 +200,10 @@ def render_page() -> None:
     st.markdown("---")
 
     # ── Prediction Confidence Timeline ────────────────────────────
-    st.subheader("📈 Prediction History")
+    st.subheader(
+        "📈 Prediction History",
+        help="Tracks the model's past predictions and probability scores over time during this active session."
+    )
 
     history = st.session_state.get("prediction_history", [])
 
@@ -204,7 +216,10 @@ def render_page() -> None:
     st.markdown("---")
 
     # ── Decision Boundary Visualization (2D PCA) ──────────────────
-    st.subheader("🎯 Decision Space (2D PCA)")
+    st.subheader(
+        "🎯 Decision Space (2D PCA)",
+        help="Principal Component Analysis (PCA) maps our 34-dimensional feature space down to 2 dimensions to visualize how clearly the model can separate Bullish (Green) and Bearish (Red) market conditions."
+    )
 
     if result.engineered_df is not None and not result.engineered_df.empty:
         try:
