@@ -99,7 +99,7 @@ class DataCleaner:
 
         missing_after = df.isnull().sum().sum()
         logger.info(
-            "Missing values: %d before → %d after (strategy=%s)",
+            "Missing values: %d before -> %d after (strategy=%s)",
             missing_before, missing_after, strategy,
         )
 
