@@ -29,6 +29,7 @@ from models.kmeans_clustering import KMeansRiskClassifier
 from models.logistic_regression import LogisticRegressionModel
 from models.model_manager import ModelManager
 from models.random_forest import RandomForestModel
+from models.xgboost_model import XGBoostModel
 from utils.config import CLUSTERING_FEATURES, TEST_SIZE
 from utils.evaluator import EvaluationMetrics, ModelEvaluator
 from utils.logger import get_logger
@@ -49,8 +50,10 @@ class PredictionResult:
     bearish_prob: float                # Probability of bearish outcome
     rf_prediction: int = 0             # Random Forest prediction
     lr_prediction: int = 0             # Logistic Regression prediction
+    xgb_prediction: int = 0            # XGBoost prediction
     rf_proba: np.ndarray = field(default_factory=lambda: np.array([]))
     lr_proba: np.ndarray = field(default_factory=lambda: np.array([]))
+    xgb_proba: np.ndarray = field(default_factory=lambda: np.array([]))
     feature_importance: pd.DataFrame = field(default_factory=pd.DataFrame)
 
 
@@ -103,6 +106,7 @@ class CryptoPipeline:
         self.feature_engineer = FeatureEngineer()
         self.rf_model = RandomForestModel()
         self.lr_model = LogisticRegressionModel()
+        self.xgb_model = XGBoostModel()
         self.kmeans = KMeansRiskClassifier()
         self.evaluator = ModelEvaluator()
         self.agent = RecommendationAgent()
@@ -170,7 +174,7 @@ class CryptoPipeline:
             # Step 6: Generate recommendation
             logger.info("Pipeline Step 6: Generating recommendation")
             current_price = float(engineered_df["close"].iloc[-1])
-            model_confidence = result.evaluation_metrics.get("rf_accuracy", 0.5)
+            model_confidence = result.evaluation_metrics.get("xgb_accuracy", 0.5)
 
             recommendation = self.agent.generate_recommendation(
                 bullish_prob=prediction_result.bullish_prob,
@@ -268,6 +272,7 @@ class CryptoPipeline:
             "status": self._status,
             "rf_trained": self.rf_model.is_trained,
             "lr_trained": self.lr_model.is_trained,
+            "xgb_trained": self.xgb_model.is_trained,
             "kmeans_fitted": self.kmeans.is_fitted,
             "feature_count": len(self._feature_names),
         }
@@ -336,11 +341,26 @@ class CryptoPipeline:
                 logger.warning("LR load failed, retraining: %s", exc)
                 self.lr_model.train(X_train, y_train)
 
+        # --- Train or load XGBoost ---
+        if retrain or not self.xgb_model.is_trained:
+            try:
+                if not retrain and self.model_manager.model_exists("xgboost"):
+                    self.xgb_model.load(
+                        self.model_manager._get_model_path("xgboost")
+                    )
+                else:
+                    self.xgb_model.train(X_train, y_train)
+            except Exception as exc:
+                logger.warning("XGB load failed, retraining: %s", exc)
+                self.xgb_model.train(X_train, y_train)
+
         # --- Evaluate on test set ---
         rf_pred = self.rf_model.predict(X_test)
         rf_proba = self.rf_model.predict_proba(X_test)
         lr_pred = self.lr_model.predict(X_test)
         lr_proba = self.lr_model.predict_proba(X_test)
+        xgb_pred = self.xgb_model.predict(X_test)
+        xgb_proba = self.xgb_model.predict_proba(X_test)
 
         rf_metrics = self.evaluator.compute_metrics(
             y_test, rf_pred, rf_proba[:, 1]
@@ -348,9 +368,12 @@ class CryptoPipeline:
         lr_metrics = self.evaluator.compute_metrics(
             y_test, lr_pred, lr_proba[:, 1]
         )
+        xgb_metrics = self.evaluator.compute_metrics(
+            y_test, xgb_pred, xgb_proba[:, 1]
+        )
 
         # Store evaluation metrics for the pipeline result
-        self._store_evaluation_metrics(rf_metrics, lr_metrics)
+        self._store_evaluation_metrics(rf_metrics, lr_metrics, xgb_metrics)
 
         # --- Predict on the latest data point ---
         latest_features = df[feature_cols].iloc[[-1]].values
@@ -359,22 +382,26 @@ class CryptoPipeline:
         rf_latest_proba = self.rf_model.predict_proba(latest_features)[0]
         lr_latest_pred = self.lr_model.predict(latest_features)[0]
         lr_latest_proba = self.lr_model.predict_proba(latest_features)[0]
+        xgb_latest_pred = self.xgb_model.predict(latest_features)[0]
+        xgb_latest_proba = self.xgb_model.predict_proba(latest_features)[0]
 
-        # Use RF as primary model — bullish prob is index 1
-        bullish_prob = float(rf_latest_proba[1])
-        bearish_prob = float(rf_latest_proba[0])
+        # XGBoost is primary model — bullish prob is index 1
+        bullish_prob = float(xgb_latest_proba[1])
+        bearish_prob = float(xgb_latest_proba[0])
 
-        # Feature importance from Random Forest
-        importance_df = self.rf_model.get_feature_importance(feature_cols)
+        # Feature importance from XGBoost (gain-based)
+        importance_df = self.xgb_model.get_feature_importance(feature_cols)
 
         return PredictionResult(
-            prediction=int(rf_latest_pred),
+            prediction=int(xgb_latest_pred),
             bullish_prob=bullish_prob,
             bearish_prob=bearish_prob,
             rf_prediction=int(rf_latest_pred),
             lr_prediction=int(lr_latest_pred),
+            xgb_prediction=int(xgb_latest_pred),
             rf_proba=rf_latest_proba,
             lr_proba=lr_latest_proba,
+            xgb_proba=xgb_latest_proba,
             feature_importance=importance_df,
         )
 
@@ -382,6 +409,7 @@ class CryptoPipeline:
         self,
         rf_metrics: EvaluationMetrics,
         lr_metrics: EvaluationMetrics,
+        xgb_metrics: EvaluationMetrics,
     ) -> None:
         """Store evaluation metrics in a format accessible by the frontend."""
         self._evaluation_metrics = {
@@ -399,6 +427,13 @@ class CryptoPipeline:
             "lr_roc_auc": lr_metrics.roc_auc,
             "lr_confusion_matrix": lr_metrics.confusion_mat,
             "lr_below_target": lr_metrics.below_target,
+            "xgb_accuracy": xgb_metrics.accuracy,
+            "xgb_precision": xgb_metrics.precision,
+            "xgb_recall": xgb_metrics.recall,
+            "xgb_f1": xgb_metrics.f1_score,
+            "xgb_roc_auc": xgb_metrics.roc_auc,
+            "xgb_confusion_matrix": xgb_metrics.confusion_mat,
+            "xgb_below_target": xgb_metrics.below_target,
         }
 
     @property

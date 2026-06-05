@@ -62,8 +62,9 @@ SUPPORTED_INTERVALS: list[str] = ["1m", "5m", "15m", "1h", "4h", "1d", "1w"]
 # Data Defaults
 # =============================================================================
 DEFAULT_INTERVAL: str = "1d"
-DEFAULT_LIMIT: int = 500
-MIN_DATA_ROWS: int = 100
+DEFAULT_LIMIT: int = 1000          # Binance max per request
+YAHOO_MAX_PERIOD: str = "max"      # Full historical data via Yahoo Finance
+MIN_DATA_ROWS: int = 200
 
 # Required OHLCV columns (case-insensitive matching is handled in the loader)
 REQUIRED_COLUMNS: list[str] = ["date", "open", "high", "low", "close", "volume"]
@@ -89,18 +90,42 @@ TEST_SIZE: float = 0.20  # 80/20 train/test split
 CV_SPLITS: int = 5       # TimeSeriesSplit n_splits
 
 # Random Forest defaults
-RF_N_ESTIMATORS: int = 200
+RF_N_ESTIMATORS: int = 300
 RF_MAX_DEPTH: int = 10
 
-# GridSearchCV parameter grid for Random Forest
+# Expanded GridSearchCV parameter grid for Random Forest
 RF_PARAM_GRID: dict[str, list] = {
-    "n_estimators": [100, 200],
-    "max_depth": [5, 10, 15],
+    "n_estimators": [100, 200, 300],
+    "max_depth": [5, 10, 15, None],
+    "min_samples_split": [2, 5],
+    "min_samples_leaf": [1, 2],
+    "max_features": ["sqrt", "log2"],
 }
 
 # Logistic Regression defaults
 LR_C: float = 1.0
-LR_MAX_ITER: int = 1000
+LR_MAX_ITER: int = 2000
+
+# GridSearchCV parameter grid for Logistic Regression
+LR_PARAM_GRID: dict[str, list] = {
+    "C": [0.01, 0.1, 1.0, 10.0, 100.0],
+    "solver": ["lbfgs", "liblinear"],
+    "max_iter": [1000, 2000],
+}
+
+# XGBoost defaults
+XGB_N_ESTIMATORS: int = 300
+XGB_MAX_DEPTH: int = 6
+XGB_LEARNING_RATE: float = 0.05
+
+# GridSearchCV parameter grid for XGBoost
+XGB_PARAM_GRID: dict[str, list] = {
+    "n_estimators": [100, 200, 300],
+    "max_depth": [3, 5, 7],
+    "learning_rate": [0.01, 0.05, 0.1],
+    "subsample": [0.8, 1.0],
+    "colsample_bytree": [0.8, 1.0],
+}
 
 # K-Means defaults
 KMEANS_N_CLUSTERS: int = 3
@@ -167,3 +192,12 @@ CLUSTERING_FEATURES: list[str] = [
     "volume_change",
     "daily_return_std",
 ]
+
+# =============================================================================
+# Additional Feature Engineering Windows
+# =============================================================================
+ATR_WINDOW: int = 14            # Average True Range window
+STOCH_WINDOW: int = 14         # Stochastic Oscillator window
+WILLIAMS_LBPERIOD: int = 14    # Williams %R lookback
+LAG_PERIODS: list[int] = [1, 3, 5, 7]   # Lag feature periods
+ROLL_RETURN_WINDOWS: list[int] = [7, 14, 21]  # Rolling return windows

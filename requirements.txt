@@ -12,3 +12,4 @@ ta
 scipy
 seaborn
 matplotlib
+xgboost

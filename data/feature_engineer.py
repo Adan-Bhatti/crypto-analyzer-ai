@@ -7,12 +7,18 @@ Features created:
   - SMA (Simple Moving Average) — windows: 7, 14, 21
   - EMA (Exponential Moving Average) — windows: 12, 26
   - RSI (Relative Strength Index) — window: 14
-  - MACD + MACD Signal — windows: 12, 26, 9
-  - Bollinger Bands (upper, lower) — window: 20
+  - MACD + MACD Signal + MACD Diff — windows: 12, 26, 9
+  - Bollinger Bands (upper, lower, middle) — window: 20
+  - ATR (Average True Range) — window: 14
+  - OBV (On-Balance Volume)
+  - Stochastic Oscillator (%K, %D) — window: 14
+  - Williams %R — lookback: 14
   - Volume Change % — 1-period pct_change on Volume
   - Daily Returns — 1-period pct_change on Close
   - Rolling Volatility — 14-period std of daily returns
   - Price Momentum — 5-period Close diff
+  - Lag Features — close_lag_1, close_lag_3, close_lag_5, close_lag_7
+  - Rolling Return Features — return_7d, return_14d, return_21d
   - Target Label — 1 if next Close > current Close, else 0
 """
 from __future__ import annotations
@@ -21,15 +27,20 @@ import pandas as pd
 import ta
 
 from utils.config import (
+    ATR_WINDOW,
     BOLLINGER_WINDOW,
     EMA_WINDOWS,
+    LAG_PERIODS,
     MACD_FAST,
     MACD_SIGNAL,
     MACD_SLOW,
     MOMENTUM_WINDOW,
+    ROLL_RETURN_WINDOWS,
     RSI_WINDOW,
     SMA_WINDOWS,
+    STOCH_WINDOW,
     VOLATILITY_WINDOW,
+    WILLIAMS_LBPERIOD,
 )
 from utils.logger import get_logger
 
@@ -241,6 +252,159 @@ class FeatureEngineer:
         return df
 
     # -----------------------------------------------------------------
+    # ATR — Average True Range
+    # -----------------------------------------------------------------
+
+    def add_atr(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Add Average True Range (ATR) column.
+
+        ATR measures market volatility using High, Low, and Close.
+        Creates column: ``atr_14``.
+
+        Args:
+            df: DataFrame with ``high``, ``low``, ``close`` columns.
+
+        Returns:
+            DataFrame with ATR column appended.
+        """
+        col_name = f"atr_{ATR_WINDOW}"
+        df[col_name] = ta.volatility.average_true_range(
+            high=df["high"],
+            low=df["low"],
+            close=df["close"],
+            window=ATR_WINDOW,
+        )
+        logger.debug("Added %s", col_name)
+        return df
+
+    # -----------------------------------------------------------------
+    # OBV — On-Balance Volume
+    # -----------------------------------------------------------------
+
+    def add_obv(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Add On-Balance Volume (OBV) column.
+
+        OBV uses volume flow to predict changes in price.
+        Creates column: ``obv``.
+
+        Args:
+            df: DataFrame with ``close`` and ``volume`` columns.
+
+        Returns:
+            DataFrame with OBV column appended.
+        """
+        df["obv"] = ta.volume.on_balance_volume(
+            close=df["close"],
+            volume=df["volume"],
+        )
+        logger.debug("Added OBV")
+        return df
+
+    # -----------------------------------------------------------------
+    # Stochastic Oscillator
+    # -----------------------------------------------------------------
+
+    def add_stochastic(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Add Stochastic Oscillator (%K and %D) columns.
+
+        Identifies overbought/oversold conditions.
+        Creates columns: ``stoch_k``, ``stoch_d``.
+
+        Args:
+            df: DataFrame with ``high``, ``low``, ``close`` columns.
+
+        Returns:
+            DataFrame with Stochastic columns appended.
+        """
+        stoch = ta.momentum.StochasticOscillator(
+            high=df["high"],
+            low=df["low"],
+            close=df["close"],
+            window=STOCH_WINDOW,
+            smooth_window=3,
+        )
+        df["stoch_k"] = stoch.stoch()
+        df["stoch_d"] = stoch.stoch_signal()
+        logger.debug("Added stoch_k, stoch_d")
+        return df
+
+    # -----------------------------------------------------------------
+    # Williams %R
+    # -----------------------------------------------------------------
+
+    def add_williams_r(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Add Williams %R momentum column.
+
+        Ranges from -100 to 0; values above -20 indicate overbought,
+        values below -80 indicate oversold.
+        Creates column: ``williams_r``.
+
+        Args:
+            df: DataFrame with ``high``, ``low``, ``close`` columns.
+
+        Returns:
+            DataFrame with Williams %R column appended.
+        """
+        df["williams_r"] = ta.momentum.williams_r(
+            high=df["high"],
+            low=df["low"],
+            close=df["close"],
+            lbp=WILLIAMS_LBPERIOD,
+        )
+        logger.debug("Added williams_r")
+        return df
+
+    # -----------------------------------------------------------------
+    # Lag Features
+    # -----------------------------------------------------------------
+
+    def add_lag_features(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Add lagged close price features.
+
+        Creates columns: ``close_lag_1``, ``close_lag_3``, ``close_lag_5``,
+        ``close_lag_7``.
+
+        Args:
+            df: DataFrame with a ``close`` column.
+
+        Returns:
+            DataFrame with lag columns appended.
+        """
+        for lag in LAG_PERIODS:
+            col_name = f"close_lag_{lag}"
+            df[col_name] = df["close"].shift(lag)
+            logger.debug("Added %s", col_name)
+        return df
+
+    # -----------------------------------------------------------------
+    # Rolling Return Features
+    # -----------------------------------------------------------------
+
+    def add_rolling_returns(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Add rolling cumulative return features.
+
+        Creates columns: ``return_7d``, ``return_14d``, ``return_21d``
+        — percentage returns over each rolling window.
+
+        Args:
+            df: DataFrame with a ``close`` column.
+
+        Returns:
+            DataFrame with rolling return columns appended.
+        """
+        for window in ROLL_RETURN_WINDOWS:
+            col_name = f"return_{window}d"
+            df[col_name] = df["close"].pct_change(window)
+            logger.debug("Added %s", col_name)
+        return df
+
+    # -----------------------------------------------------------------
     # Target Label
     # -----------------------------------------------------------------
 
@@ -276,7 +440,9 @@ class FeatureEngineer:
 
         Execution order:
           1. SMA → 2. EMA → 3. RSI → 4. MACD → 5. Bollinger Bands
-          → 6. Volume Features → 7. Volatility/Momentum → 8. Target Label.
+          → 6. ATR → 7. OBV → 8. Stochastic → 9. Williams %R
+          → 10. Volume Features → 11. Volatility/Momentum
+          → 12. Lag Features → 13. Rolling Returns → 14. Target Label.
 
         After feature generation, rows with NaN values (from rolling windows)
         are dropped, except for the last row's target NaN.
@@ -294,8 +460,14 @@ class FeatureEngineer:
         df = self.add_rsi(df)
         df = self.add_macd(df)
         df = self.add_bollinger_bands(df)
+        df = self.add_atr(df)
+        df = self.add_obv(df)
+        df = self.add_stochastic(df)
+        df = self.add_williams_r(df)
         df = self.add_volume_features(df)
         df = self.add_volatility(df)
+        df = self.add_lag_features(df)
+        df = self.add_rolling_returns(df)
         df = self.add_target_label(df)
 
         # Drop rows with NaN from rolling-window indicators (first N rows)

@@ -15,6 +15,7 @@ import pandas as pd
 from utils.config import (
     MIN_DATA_ROWS,
     REQUIRED_COLUMNS,
+    YAHOO_MAX_PERIOD,
     YAHOO_TICKERS,
 )
 from utils.helpers import normalize_column_names
@@ -113,7 +114,7 @@ class DataLoader:
         self,
         symbol: str,
         interval: str = "1d",
-        limit: int = 500,
+        limit: int = 1000,
     ) -> pd.DataFrame:
         """
         Fetch OHLCV candlestick data from the Binance public REST API.
@@ -143,6 +144,49 @@ class DataLoader:
         except Exception as exc:
             logger.warning("Binance API failed for %s: %s", symbol, exc)
             raise DataLoadError(f"Binance API error: {exc}") from exc
+
+    def load_max_history(
+        self,
+        ticker: str,
+        interval: str = "1d",
+    ) -> pd.DataFrame:
+        """
+        Fetch the maximum available historical OHLCV data from Yahoo Finance.
+
+        Uses ``period="max"`` to retrieve every available daily candle
+        (BTC goes back to 2014-09-17 — over 4,000 candles).
+
+        Args:
+            ticker: Yahoo Finance ticker (e.g., ``"BTC-USD"``).
+            interval: Data interval (default ``"1d"`` for daily).
+
+        Returns:
+            DataFrame with columns: date, open, high, low, close, volume.
+
+        Raises:
+            DataLoadError: If yfinance returns empty data.
+        """
+        from services.yahoo_service import YahooFinanceService
+
+        logger.info("Loading MAX history from Yahoo Finance: %s (%s)", ticker, interval)
+
+        try:
+            service = YahooFinanceService()
+            df = service.get_historical(
+                symbol=ticker,
+                period=YAHOO_MAX_PERIOD,
+                interval=interval,
+            )
+            self._validate_row_count(df)
+            logger.info(
+                "Yahoo Finance MAX history loaded — %d rows (%.1f years)",
+                len(df),
+                len(df) / 365.0,
+            )
+            return df
+        except Exception as exc:
+            logger.warning("Yahoo Finance MAX failed for %s: %s", ticker, exc)
+            raise DataLoadError(f"Yahoo Finance MAX error: {exc}") from exc
 
     # -----------------------------------------------------------------
     # Yahoo Finance Loading
@@ -188,40 +232,41 @@ class DataLoader:
 
     def load_with_fallback(self, symbol: str) -> pd.DataFrame:
         """
-        Attempt to load data from Binance first; on failure, fall back to Yahoo Finance.
+        Load maximum historical data for a symbol.
+
+        Strategy:
+          1. Yahoo Finance ``period="max"`` — full history (up to 10+ years)
+          2. Binance API ``limit=1000`` — most recent 1000 candles (fallback)
 
         Args:
             symbol: Binance trading pair symbol (e.g., ``"BTCUSDT"``).
 
         Returns:
-            DataFrame with OHLCV data from whichever source succeeds.
+            DataFrame with OHLCV data from whichever source gives the most data.
 
         Raises:
-            DataLoadError: If both sources fail.
+            DataLoadError: If all sources fail.
         """
-        # Try Binance first
-        try:
-            return self.load_from_binance(symbol)
-        except (DataLoadError, Exception) as binance_err:
-            logger.warning(
-                "Binance failed for %s, falling back to Yahoo Finance. Error: %s",
-                symbol, binance_err,
-            )
-
-        # Fallback to Yahoo Finance
+        # Try Yahoo Finance first — gives maximum history
         yahoo_ticker = YAHOO_TICKERS.get(symbol)
-        if not yahoo_ticker:
-            raise DataLoadError(
-                f"No Yahoo Finance ticker mapping for symbol: {symbol}"
-            )
+        if yahoo_ticker:
+            try:
+                return self.load_max_history(yahoo_ticker)
+            except (DataLoadError, Exception) as yahoo_err:
+                logger.warning(
+                    "Yahoo Finance MAX failed for %s, falling back to Binance. Error: %s",
+                    symbol, yahoo_err,
+                )
 
+        # Fallback to Binance with max limit
         try:
-            return self.load_from_yahoo(yahoo_ticker, period="2y")
-        except DataLoadError:
+            return self.load_from_binance(symbol, limit=1000)
+        except (DataLoadError, Exception) as binance_err:
             raise DataLoadError(
                 f"All data sources failed for {symbol}. "
+                f"Last error: {binance_err}. "
                 "Check your internet connection or provide a CSV file."
-            )
+            ) from binance_err
 
     # -----------------------------------------------------------------
     # Private Helpers

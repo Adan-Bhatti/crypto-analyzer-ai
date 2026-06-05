@@ -1,15 +1,19 @@
 """
-Random Forest Classification Model
-=====================================
-Primary classification model for predicting cryptocurrency price direction.
+XGBoost Classification Model
+==============================
+Gradient-boosted tree classifier for predicting cryptocurrency price direction.
 
 Predicts:
   - **1** (Bullish): Price will rise in the next period.
   - **0** (Bearish): Price will fall in the next period.
 
-Uses ``TimeSeriesSplit`` for cross-validation (respects temporal ordering),
-``class_weight='balanced'`` to handle class imbalance, and ``GridSearchCV``
-for hyperparameter tuning.
+Uses ``TimeSeriesSplit`` for cross-validation, ``scale_pos_weight`` to handle
+class imbalance, and ``GridSearchCV`` for hyperparameter tuning.
+
+XGBoost typically outperforms Random Forest on tabular financial data due to:
+  - Sequential boosting (each tree corrects the previous one's errors)
+  - Built-in L1/L2 regularization (reduces overfitting)
+  - Handles missing values natively
 """
 from __future__ import annotations
 
@@ -18,30 +22,31 @@ import time
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
+from xgboost import XGBClassifier
 
 from utils.config import (
     CV_SPLITS,
     RANDOM_STATE,
-    RF_MAX_DEPTH,
-    RF_N_ESTIMATORS,
-    RF_PARAM_GRID,
+    XGB_LEARNING_RATE,
+    XGB_MAX_DEPTH,
+    XGB_N_ESTIMATORS,
+    XGB_PARAM_GRID,
 )
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
-class RandomForestModel:
+class XGBoostModel:
     """
-    Primary classification model using Random Forest.
+    Primary gradient-boosted tree classifier using XGBoost.
 
     Predicts: 1 = Bullish (price will rise), 0 = Bearish (price will fall).
 
     Usage::
 
-        model = RandomForestModel()
+        model = XGBoostModel()
         model.train(X_train, y_train)
         predictions = model.predict(X_test)
         probabilities = model.predict_proba(X_test)
@@ -49,35 +54,42 @@ class RandomForestModel:
 
     def __init__(
         self,
-        n_estimators: int = RF_N_ESTIMATORS,
-        max_depth: int = RF_MAX_DEPTH,
+        n_estimators: int = XGB_N_ESTIMATORS,
+        max_depth: int = XGB_MAX_DEPTH,
+        learning_rate: float = XGB_LEARNING_RATE,
         random_state: int = RANDOM_STATE,
     ) -> None:
         """
-        Initialize the Random Forest model with default hyperparameters.
+        Initialize the XGBoost model with default hyperparameters.
 
         Args:
-            n_estimators: Number of trees in the forest.
+            n_estimators: Number of boosting rounds.
             max_depth: Maximum depth of each tree.
+            learning_rate: Step size shrinkage (eta) to prevent overfitting.
             random_state: Random seed for reproducibility.
         """
         self.n_estimators = n_estimators
         self.max_depth = max_depth
+        self.learning_rate = learning_rate
         self.random_state = random_state
 
-        # Initialize the classifier with balanced class weights
-        self.model = RandomForestClassifier(
+        # Initialize the base classifier
+        self.model = XGBClassifier(
             n_estimators=n_estimators,
             max_depth=max_depth,
+            learning_rate=learning_rate,
             random_state=random_state,
-            class_weight="balanced",
+            use_label_encoder=False,
+            eval_metric="logloss",
             n_jobs=-1,
+            verbosity=0,
         )
 
         # Metadata tracked during training
         self.best_params: dict | None = None
         self.training_time: float = 0.0
         self.is_trained: bool = False
+        self._scale_pos_weight: float = 1.0
 
     # -----------------------------------------------------------------
     # Training
@@ -85,35 +97,48 @@ class RandomForestModel:
 
     def train(self, X_train: np.ndarray, y_train: np.ndarray) -> None:
         """
-        Train the Random Forest model with GridSearchCV hyperparameter tuning.
+        Train the XGBoost model with GridSearchCV hyperparameter tuning.
 
-        Uses ``TimeSeriesSplit(n_splits=5)`` for cross-validation to respect
-        temporal ordering of financial data.
+        Computes ``scale_pos_weight`` from the class distribution to handle
+        imbalanced crypto data. Uses ``TimeSeriesSplit`` for cross-validation.
 
         Args:
             X_train: Training feature matrix.
             y_train: Training target labels (0 or 1).
         """
         logger.info(
-            "Training Random Forest — %d samples, %d features",
+            "Training XGBoost — %d samples, %d features",
             X_train.shape[0], X_train.shape[1],
         )
 
         start_time = time.time()
+
+        # Compute scale_pos_weight to handle class imbalance
+        # = count(negative) / count(positive)
+        neg_count = int(np.sum(y_train == 0))
+        pos_count = int(np.sum(y_train == 1))
+        self._scale_pos_weight = neg_count / pos_count if pos_count > 0 else 1.0
+        logger.info(
+            "Class distribution — Bearish: %d, Bullish: %d, scale_pos_weight: %.3f",
+            neg_count, pos_count, self._scale_pos_weight,
+        )
 
         # Time-series cross-validation (no data leakage)
         tscv = TimeSeriesSplit(n_splits=CV_SPLITS)
 
         # GridSearchCV over the expanded parameter grid
         grid_search = GridSearchCV(
-            estimator=RandomForestClassifier(
+            estimator=XGBClassifier(
                 random_state=self.random_state,
-                class_weight="balanced",
+                scale_pos_weight=self._scale_pos_weight,
+                use_label_encoder=False,
+                eval_metric="logloss",
                 n_jobs=-1,
+                verbosity=0,
             ),
-            param_grid=RF_PARAM_GRID,
+            param_grid=XGB_PARAM_GRID,
             cv=tscv,
-            scoring="f1_weighted",   # Better than accuracy for imbalanced classes
+            scoring="f1_weighted",
             n_jobs=-1,
             verbose=1,
         )
@@ -126,9 +151,9 @@ class RandomForestModel:
         self.training_time = time.time() - start_time
         self.is_trained = True
 
-        logger.info("Best params: %s", self.best_params)
+        logger.info("XGBoost best params: %s", self.best_params)
         logger.info(
-            "Best CV accuracy: %.4f | Training time: %.2fs",
+            "Best CV f1_weighted: %.4f | Training time: %.2fs",
             grid_search.best_score_, self.training_time,
         )
 
@@ -177,7 +202,7 @@ class RandomForestModel:
         self, feature_names: list[str]
     ) -> pd.DataFrame:
         """
-        Get feature importances (Gini impurity) ranked by importance.
+        Get feature importances (gain-based) ranked by importance.
 
         Args:
             feature_names: List of feature names matching the training data.
@@ -198,7 +223,7 @@ class RandomForestModel:
         }).sort_values("importance", ascending=False).reset_index(drop=True)
 
         logger.info(
-            "Top 5 features: %s",
+            "XGBoost Top 5 features: %s",
             list(importance_df.head(5)["feature"]),
         )
 
@@ -213,11 +238,11 @@ class RandomForestModel:
         Save the trained model to disk using joblib.
 
         Args:
-            path: File path to save the model (e.g., ``"models/saved/rf_model.joblib"``).
+            path: File path to save the model (e.g., ``"models/saved/xgb_model.joblib"``).
         """
         self._check_trained()
         joblib.dump(self.model, path)
-        logger.info("Random Forest model saved to: %s", path)
+        logger.info("XGBoost model saved to: %s", path)
 
     def load(self, path: str) -> None:
         """
@@ -228,7 +253,7 @@ class RandomForestModel:
         """
         self.model = joblib.load(path)
         self.is_trained = True
-        logger.info("Random Forest model loaded from: %s", path)
+        logger.info("XGBoost model loaded from: %s", path)
 
     # -----------------------------------------------------------------
     # Private Helpers
@@ -238,5 +263,5 @@ class RandomForestModel:
         """Raise an error if the model has not been trained or loaded."""
         if not self.is_trained:
             raise RuntimeError(
-                "Model has not been trained yet. Call train() or load() first."
+                "XGBoost model has not been trained yet. Call train() or load() first."
             )

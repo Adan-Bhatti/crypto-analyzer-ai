@@ -12,9 +12,10 @@ import joblib
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
 from sklearn.preprocessing import StandardScaler
 
-from utils.config import LR_C, LR_MAX_ITER, RANDOM_STATE
+from utils.config import CV_SPLITS, LR_C, LR_MAX_ITER, LR_PARAM_GRID, RANDOM_STATE
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -53,6 +54,7 @@ class LogisticRegressionModel:
         # StandardScaler is applied before fitting (critical for LR performance)
         self.scaler = StandardScaler()
 
+        # Base estimator; will be replaced by GridSearchCV best estimator
         self.model = LogisticRegression(
             C=C,
             max_iter=max_iter,
@@ -62,6 +64,7 @@ class LogisticRegressionModel:
         )
 
         # Metadata tracked during training
+        self.best_params: dict | None = None
         self.training_time: float = 0.0
         self.is_trained: bool = False
 
@@ -89,14 +92,32 @@ class LogisticRegressionModel:
         # Scale features (important for convergence)
         X_scaled = self.scaler.fit_transform(X_train)
 
-        self.model.fit(X_scaled, y_train)
+        # Time-series cross-validation (no data leakage)
+        tscv = TimeSeriesSplit(n_splits=CV_SPLITS)
 
+        # GridSearchCV to find optimal C, solver, and max_iter
+        grid_search = GridSearchCV(
+            estimator=LogisticRegression(
+                random_state=RANDOM_STATE,
+                class_weight="balanced",
+            ),
+            param_grid=LR_PARAM_GRID,
+            cv=tscv,
+            scoring="f1_weighted",
+            n_jobs=-1,
+            verbose=1,
+        )
+
+        grid_search.fit(X_scaled, y_train)
+
+        self.model = grid_search.best_estimator_
+        self.best_params = grid_search.best_params_
         self.training_time = time.time() - start_time
         self.is_trained = True
 
         logger.info(
-            "Logistic Regression trained in %.2fs (C=%.2f, max_iter=%d)",
-            self.training_time, self.C, self.max_iter,
+            "Logistic Regression best params: %s | CV f1_weighted: %.4f | Time: %.2fs",
+            self.best_params, grid_search.best_score_, self.training_time,
         )
 
     # -----------------------------------------------------------------

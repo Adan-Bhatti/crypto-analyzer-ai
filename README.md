@@ -5,15 +5,15 @@
 ![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit)
 ![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-F7931E?style=for-the-badge&logo=scikit-learn)
 
-A comprehensive AI-powered dashboard that analyzes cryptocurrency market behavior using Machine Learning (Random Forest, Logistic Regression), K-Means Clustering for risk classification, and an Intelligent Agent for actionable Buy/Sell/Hold recommendations.
+A comprehensive AI-powered dashboard that analyzes cryptocurrency market behavior using Machine Learning (XGBoost, Random Forest, Logistic Regression), K-Means Clustering for risk classification, and an Intelligent Agent for actionable Buy/Sell/Hold recommendations.
 
 ---
 
 ## 🌟 Key Features
 
-1. **Live Market Dashboard**: Real-time OHLCV data from Binance (with automatic Yahoo Finance fallback), price cards, and interactive candlestick charts.
-2. **Historical Analysis**: Technical indicator overlays including SMA, EMA, RSI, MACD, and Bollinger Bands with correlation heatmaps.
-3. **ML Price Prediction**: Random Forest and Logistic Regression models trained to predict next-period price direction (Bullish/Bearish).
+1. **Live Market Dashboard**: Real-time and maximum historical OHLCV data fetched from Yahoo Finance (up to 10+ years) and Binance API.
+2. **Historical Analysis**: 14+ Technical indicator overlays including SMA, EMA, RSI, MACD, Bollinger Bands, ATR, OBV, Stochastic, Williams %R, and advanced lag/rolling returns.
+3. **ML Price Prediction**: XGBoost, Random Forest, and Logistic Regression models trained with extensive GridSearchCV to predict next-period price direction (Bullish/Bearish).
 4. **Risk Classification**: Unsupervised K-Means clustering categorizes market conditions into Low, Medium, or High risk with 3D visualization.
 5. **Intelligent Agent**: A rule-based engine synthesizes predictions and risk levels to generate BUY/HOLD/SELL recommendations with confidence scores and reasoning.
 6. **Model Performance Tracking**: Detailed evaluation metrics (Accuracy, F1, ROC-AUC), confusion matrices, learning curves, and cross-validation scores.
@@ -24,7 +24,7 @@ A comprehensive AI-powered dashboard that analyzes cryptocurrency market behavio
 
 - **Frontend**: Streamlit multi-page application with Plotly visualizations.
 - **Backend/Orchestration**: `CryptoPipeline` manages the end-to-end flow from data ingestion to recommendation.
-- **Intelligence Layer**: Scikit-learn models (RF, LR, K-Means) with `joblib` persistence and `TimeSeriesSplit` cross-validation.
+- **Intelligence Layer**: XGBoost and Scikit-learn models (RF, LR, K-Means) with `joblib` persistence and `TimeSeriesSplit` cross-validation.
 - **Data Layer**: Cleaners and Feature Engineers using Pandas, NumPy, and `ta` library for technical indicators.
 - **Services Layer**: Unified `MarketDataService` handling Binance REST API and `yfinance` with exponential backoff.
 
@@ -62,7 +62,13 @@ A comprehensive AI-powered dashboard that analyzes cryptocurrency market behavio
    ```
    *(Optional: Add your Binance API keys if you wish to use authenticated endpoints, though public endpoints work fine for standard analysis).*
 
-5. **Run the Application**
+6. **(Optional) Generate Full CSV Datasets**
+   To download the maximum historical data for all supported coins as `.csv` files to `data/datasets/`:
+   ```bash
+   python download_datasets.py
+   ```
+
+7. **Run the Application**
    ```bash
    streamlit run app.py
    ```
@@ -76,12 +82,14 @@ crypto_analyzer/
 ├── app.py                      # Main Streamlit entry point
 ├── requirements.txt            # Python dependencies
 ├── .env.example                # Environment variables template
+├── download_datasets.py        # Standalone script to export CSV datasets
+├── train_models.py             # Standalone script for max-data model training
 ├── agent/                      # Intelligent recommendation agent
 ├── backend/                    # Pipeline and session state orchestrator
-├── data/                       # Data loader, cleaner, and feature engineer
+├── data/                       # Data loader, cleaner, feature engineer, and datasets
 ├── documentation/              # Architecture, deployment guide, report, QA
 ├── frontend/                   # Streamlit pages and UI components
-├── models/                     # RF, LR, K-Means models and model manager
+├── models/                     # XGB, RF, LR, K-Means models and model manager
 ├── services/                   # Binance and Yahoo Finance API clients
 └── utils/                      # Config, logging, evaluation, and helpers
 ```
