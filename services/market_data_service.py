@@ -94,6 +94,12 @@ class MarketDataService:
             df = self.yahoo.get_historical(
                 symbol=yahoo_ticker, period=period, interval=yahoo_interval
             )
+            
+            # Yahoo returns data based on predefined periods (e.g. 1mo). 
+            # We must truncate it down to the exact requested limit.
+            if len(df) > limit:
+                df = df.iloc[-limit:].reset_index(drop=True)
+                
             self.source_used = "Yahoo Finance"
             logger.info(
                 "Successfully fetched data from Yahoo Finance (%d rows)", len(df)
