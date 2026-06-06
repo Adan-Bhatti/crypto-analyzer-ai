@@ -37,11 +37,15 @@ desktop.ini
 # =============================================================================
 # Project-Specific
 # =============================================================================
-models/saved/*.joblib
-models/saved/*.pkl
 logs/*.log
 data/sample/*.csv
 !data/sample/README.txt
+
+# =============================================================================
+# Submission Exclusions (private / not needed for running the app)
+# =============================================================================
+documentation/viva_qa.md
+download_datasets.py
 
 # =============================================================================
 # Streamlit
