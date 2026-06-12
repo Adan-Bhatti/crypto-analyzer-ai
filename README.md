@@ -1,118 +1,147 @@
-# AI-Based Cryptocurrency Market Behavior Analyzer & Risk Predictor
+<div align="center">
 
-![CryptoAI Banner](https://img.shields.io/badge/CryptoAI-Analyzer-00D4AA?style=for-the-badge)
-![Python 3.10+](https://img.shields.io/badge/Python-3.10+-blue?style=for-the-badge&logo=python)
-![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit)
-![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-F7931E?style=for-the-badge&logo=scikit-learn)
+# 📈 Crypto Analyzer AI
 
-A comprehensive AI-powered dashboard that analyzes cryptocurrency market behavior using Machine Learning (XGBoost, Random Forest, Logistic Regression), K-Means Clustering for risk classification, and an Intelligent Agent for actionable Buy/Sell/Hold recommendations.
+**An AI-powered cryptocurrency market behavior analyzer and risk predictor — featuring real-time dashboards, ML price prediction, and intelligent Buy/Sell/Hold recommendations.**
+
+[![CI](https://github.com/Adan-Bhatti/crypto-analyzer-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/Adan-Bhatti/crypto-analyzer-ai/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat&logo=python&logoColor=white)](https://python.org)
+[![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=flat&logo=streamlit&logoColor=white)](https://streamlit.io)
+[![scikit-learn](https://img.shields.io/badge/scikit--learn-F7931E?style=flat&logo=scikit-learn&logoColor=white)](https://scikit-learn.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+</div>
 
 ---
 
-## 🌟 Key Features
+## ✨ Key Features
 
-1. **Live Market Dashboard**: Real-time and maximum historical OHLCV data fetched from Yahoo Finance (up to 10+ years) and Binance API.
-2. **Historical Analysis**: 14+ Technical indicator overlays including SMA, EMA, RSI, MACD, Bollinger Bands, ATR, OBV, Stochastic, Williams %R, and advanced lag/rolling returns.
-3. **ML Price Prediction**: XGBoost, Random Forest, and Logistic Regression models trained with extensive GridSearchCV to predict next-period price direction (Bullish/Bearish).
-4. **Risk Classification**: Unsupervised K-Means clustering categorizes market conditions into Low, Medium, or High risk with 3D visualization.
-5. **Intelligent Agent**: A rule-based engine synthesizes predictions and risk levels to generate BUY/HOLD/SELL recommendations with confidence scores and reasoning.
-6. **Model Performance Tracking**: Detailed evaluation metrics (Accuracy, F1, ROC-AUC), confusion matrices, learning curves, and cross-validation scores.
+| Feature | Description |
+|---------|-------------|
+| 📊 **Live Market Dashboard** | Real-time and historical OHLCV data from Yahoo Finance and Binance API |
+| 📉 **Technical Analysis** | 14+ indicators: SMA, EMA, RSI, MACD, Bollinger Bands, ATR, OBV, Stochastic, Williams %R |
+| 🤖 **ML Price Prediction** | XGBoost, Random Forest and Logistic Regression with GridSearchCV tuning |
+| 🎯 **Risk Classification** | Unsupervised K-Means clustering → Low / Medium / High risk with 3D visualization |
+| 💡 **Intelligent Agent** | Rule-based engine generates BUY / HOLD / SELL signals with confidence scores |
+| 📋 **Model Evaluation** | Accuracy, F1, ROC-AUC, confusion matrices, learning curves, cross-validation |
 
 ---
 
 ## 🏗️ System Architecture
 
-- **Frontend**: Streamlit multi-page application with Plotly visualizations.
-- **Backend/Orchestration**: `CryptoPipeline` manages the end-to-end flow from data ingestion to recommendation.
-- **Intelligence Layer**: XGBoost and Scikit-learn models (RF, LR, K-Means) with `joblib` persistence and `TimeSeriesSplit` cross-validation.
-- **Data Layer**: Cleaners and Feature Engineers using Pandas, NumPy, and `ta` library for technical indicators.
-- **Services Layer**: Unified `MarketDataService` handling Binance REST API and `yfinance` with exponential backoff.
+```
++------------------------------------------+
+|          Streamlit Frontend              |
+|   (Multi-page App + Plotly Charts)       |
++--------------------+---------------------+
+                     |
++--------------------v---------------------+
+|          CryptoPipeline Backend          |
+|   (Orchestration + Session State)        |
++------+-------------+------------+--------+
+       |             |            |
+  +----v----+   +----v----+  +---v------+
+  | Data    |   |  ML     |  |  Agent   |
+  | Layer   |   | Models  |  |  Layer   |
+  | Pandas/ |   | XGB/RF/ |  | Buy/Hold/|
+  | NumPy   |   | LR/KMeans  | Sell Recs|
+  +---------+   +---------+  +----------+
+       |
+  +----v--------------------+
+  |   Services Layer        |
+  | Binance + yfinance      |
+  +-------------------------+
+```
 
 ---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Python 3.10 or higher
+- Python 3.10+
 - Git
 
 ### Installation
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/yourusername/crypto-analyzer.git
-   cd crypto-analyzer
-   ```
+```bash
+# 1. Clone the repository
+git clone https://github.com/Adan-Bhatti/crypto-analyzer-ai.git
+cd crypto-analyzer-ai
 
-2. **Create a virtual environment**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
+# 2. Create a virtual environment
+python -m venv venv
+source venv/bin/activate       # macOS/Linux
+# venv\Scripts\activate        # Windows
 
-3. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
+# 3. Install dependencies
+pip install -r requirements.txt
 
-4. **Environment Variables**
-   Copy the example environment file:
-   ```bash
-   cp .env.example .env
-   ```
-   *(Optional: Add your Binance API keys if you wish to use authenticated endpoints, though public endpoints work fine for standard analysis).*
+# 4. Configure environment
+cp .env.example .env
+# Optional: add your Binance API keys for authenticated endpoints
 
-6. **(Optional) Generate Full CSV Datasets**
-   To download the maximum historical data for all supported coins as `.csv` files to `data/datasets/`:
-   ```bash
-   python download_datasets.py
-   ```
+# 5. (Optional) Download full historical datasets
+python download_datasets.py
 
-7. **Run the Application**
-   ```bash
-   streamlit run app.py
-   ```
+# 6. Launch the app
+streamlit run app.py
+```
+
+The dashboard will open at **http://localhost:8501**
 
 ---
 
-## 📂 Project Structure
+## 📁 Project Structure
 
-```text
-crypto_analyzer/
-├── app.py                      # Main Streamlit entry point
-├── requirements.txt            # Python dependencies
-├── .env.example                # Environment variables template
-├── download_datasets.py        # Standalone script to export CSV datasets
-├── train_models.py             # Standalone script for max-data model training
-├── agent/                      # Intelligent recommendation agent
-├── backend/                    # Pipeline and session state orchestrator
-├── data/                       # Data loader, cleaner, feature engineer, and datasets
-├── documentation/              # Architecture, deployment guide, report, QA
-├── frontend/                   # Streamlit pages and UI components
-├── models/                     # XGB, RF, LR, K-Means models and model manager
-├── services/                   # Binance and Yahoo Finance API clients
-└── utils/                      # Config, logging, evaluation, and helpers
+```
+crypto-analyzer-ai/
+├── app.py                    # Streamlit entry point
+├── requirements.txt          # Python dependencies
+├── .env.example              # Environment variables template
+├── download_datasets.py      # Export CSV datasets
+├── train_models.py           # Standalone model training
+├── agent/                    # Intelligent recommendation agent
+├── backend/                  # Pipeline orchestrator
+├── data/                     # Loader, cleaner, feature engineer, datasets
+├── documentation/            # Architecture, API reference, deployment guide
+├── frontend/                 # Streamlit pages and UI components
+├── models/                   # XGB, RF, LR, K-Means + model manager
+├── services/                 # Binance and Yahoo Finance API clients
+└── utils/                    # Config, logging, evaluation helpers
 ```
 
 ---
 
 ## 📚 Documentation
 
-Detailed documentation is available in the `documentation/` directory:
-- [Project Report](documentation/project_report.md): Full academic/technical report detailing methodology.
-- [Architecture Diagram](documentation/architecture_diagram.md): ASCII diagrams of system architecture and data flow.
-- [API Reference](documentation/api_reference.md): Complete module, class, and method documentation.
-- [Deployment Guide](documentation/deployment_guide.md): Instructions for Docker and Streamlit Cloud.
-- [Viva Q&A](documentation/viva_qa.md): 30 common questions and answers regarding the system's design and ML concepts.
+| Document | Description |
+|----------|-------------|
+| [Project Report](documentation/project_report.md) | Full technical report and methodology |
+| [Architecture Diagram](documentation/architecture_diagram.md) | System architecture and data flow |
+| [API Reference](documentation/api_reference.md) | Module, class and method docs |
+| [Deployment Guide](documentation/deployment_guide.md) | Docker and Streamlit Cloud instructions |
+| [Viva Q&A](documentation/viva_qa.md) | 30 common questions about design and ML concepts |
 
 ---
 
 ## ⚠️ Disclaimer
 
-**This software is for educational and research purposes only.** It does not constitute financial advice. Cryptocurrency markets are highly volatile, and machine learning models predicting market direction carry significant risk of error. Always conduct your own research before making financial decisions.
+**This software is for educational and research purposes only.** It does not constitute financial advice. Cryptocurrency markets are highly volatile — always conduct your own research before making any financial decisions.
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ---
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License — see [LICENSE](LICENSE) for details.
+
+---
+
+## 👤 Author
+
+**Adan Bhatti** · [GitHub](https://github.com/Adan-Bhatti)
