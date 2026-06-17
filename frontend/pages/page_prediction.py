@@ -207,7 +207,8 @@ def render_page() -> None:
 
     from services.db_service import DBService
     db = DBService()
-    history = db.get_prediction_history()
+    user_id = st.session_state.get("user_info", {}).get("id", 1)
+    history = db.get_prediction_history(user_id=user_id)
 
     if history:
         fig_history = prediction_history_line(history)

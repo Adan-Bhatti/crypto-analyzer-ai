@@ -89,6 +89,10 @@ streamlit run app.py
 
 The dashboard will open at **http://localhost:8501**
 
+> **Note:** A login is required. The system will automatically create a default admin account on the first run.
+> - **Username:** `admin`
+> - **Password:** `@Bhatti288`
+
 ---
 
 ## 📁 Project Structure

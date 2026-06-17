@@ -163,7 +163,8 @@ def render_page() -> None:
 
     from services.db_service import DBService
     db = DBService()
-    rec_history = db.get_recommendation_history()
+    user_id = st.session_state.get("user_info", {}).get("id", 1)
+    rec_history = db.get_recommendation_history(user_id=user_id)
 
     if rec_history:
         history_df = pd.DataFrame(rec_history)

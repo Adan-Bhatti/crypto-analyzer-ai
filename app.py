@@ -90,6 +90,32 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+# =============================================================================
+# Authentication Gate
+# =============================================================================
+
+from services.db_service import DBService
+db = DBService()
+
+if "user_info" not in st.session_state:
+    st.session_state["user_info"] = None
+
+if not st.session_state["user_info"]:
+    st.markdown("<h2 style='text-align: center; color: #00D4AA;'>🔒 Login to CryptoAI</h2>", unsafe_allow_html=True)
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        with st.form("login_form"):
+            username = st.text_input("Username")
+            password = st.text_input("Password", type="password")
+            submit = st.form_submit_button("Login", use_container_width=True)
+            if submit:
+                user_info = db.authenticate_user(username, password)
+                if user_info:
+                    st.session_state["user_info"] = user_info
+                    st.rerun()
+                else:
+                    st.error("Invalid username or password.")
+    st.stop()
 
 # =============================================================================
 # Sidebar Navigation
@@ -99,15 +125,26 @@ from frontend.components.sidebar import render_sidebar
 
 sidebar_config = render_sidebar()
 
+if st.sidebar.button("Logout", use_container_width=True):
+    st.session_state["user_info"] = None
+    st.rerun()
 
 # =============================================================================
 # Navigation Router
 # =============================================================================
 
+nav_options = list(PAGE_LABELS)
+if st.session_state["user_info"].get("is_admin", False):
+    nav_options.append("Admin Panel")
+else:
+    # Restrict Project Overview to admins only
+    if PAGE_LABELS[0] in nav_options:
+        nav_options.remove(PAGE_LABELS[0])
+
 # Page selection via sidebar radio
 selected_page = st.sidebar.radio(
     "Navigate",
-    PAGE_LABELS,
+    nav_options,
     key="main_navigation",
     label_visibility="collapsed",
 )
@@ -165,6 +202,7 @@ if sidebar_config["run_analysis"]:
             # Track prediction history
             if result.prediction:
                 db.insert_prediction({
+                    "user_id": st.session_state["user_info"]["id"],
                     "symbol": sidebar_config.get("symbol", "UNKNOWN"),
                     "timestamp": datetime.datetime.now().isoformat(),
                     "bullish_prob": result.prediction.bullish_prob,
@@ -178,6 +216,7 @@ if sidebar_config["run_analysis"]:
             if result.recommendation:
                 rec = result.recommendation
                 db.insert_recommendation({
+                    "user_id": st.session_state["user_info"]["id"],
                     "symbol": sidebar_config.get("symbol", "UNKNOWN"),
                     "timestamp": rec.timestamp.isoformat(),
                     "action": rec.action,
@@ -233,4 +272,8 @@ elif selected_page == PAGE_LABELS[5]:  # 💡 Buy/Sell/Hold Engine
 
 elif selected_page == PAGE_LABELS[6]:  # 📈 Model Performance
     from frontend.pages.page_performance import render_page
+    render_page()
+
+elif selected_page == "Admin Panel":
+    from frontend.pages.page_admin import render_page
     render_page()
