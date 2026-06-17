@@ -161,7 +161,9 @@ def render_page() -> None:
     # ── Historical Recommendation Log ─────────────────────────────
     st.subheader("📜 Recommendation History")
 
-    rec_history = st.session_state.get("recommendation_history", [])
+    from services.db_service import DBService
+    db = DBService()
+    rec_history = db.get_recommendation_history()
 
     if rec_history:
         history_df = pd.DataFrame(rec_history)

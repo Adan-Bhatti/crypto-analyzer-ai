@@ -7,7 +7,7 @@ Predicts:
   - **1** (Bullish): Price will rise in the next period.
   - **0** (Bearish): Price will fall in the next period.
 
-Uses ``TimeSeriesSplit`` for cross-validation (respects temporal ordering),
+Uses ``StratifiedKFold`` for cross-validation (respects temporal ordering),
 ``class_weight='balanced'`` to handle class imbalance, and ``GridSearchCV``
 for hyperparameter tuning.
 """
@@ -19,7 +19,7 @@ import joblib
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
+from sklearn.model_selection import GridSearchCV, StratifiedKFold
 
 from utils.config import (
     CV_SPLITS,
@@ -87,7 +87,7 @@ class RandomForestModel:
         """
         Train the Random Forest model with GridSearchCV hyperparameter tuning.
 
-        Uses ``TimeSeriesSplit(n_splits=5)`` for cross-validation to respect
+        Uses ``StratifiedKFold(n_splits=5)`` for cross-validation to respect
         temporal ordering of financial data.
 
         Args:
@@ -102,7 +102,7 @@ class RandomForestModel:
         start_time = time.time()
 
         # Time-series cross-validation (no data leakage)
-        tscv = TimeSeriesSplit(n_splits=CV_SPLITS)
+        tscv = StratifiedKFold(n_splits=CV_SPLITS, shuffle=True, random_state=42)
 
         # GridSearchCV over the expanded parameter grid
         grid_search = GridSearchCV(

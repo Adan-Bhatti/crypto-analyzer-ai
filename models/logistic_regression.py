@@ -12,7 +12,7 @@ import joblib
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
+from sklearn.model_selection import GridSearchCV, StratifiedKFold
 from sklearn.preprocessing import StandardScaler
 
 from utils.config import CV_SPLITS, LR_C, LR_MAX_ITER, LR_PARAM_GRID, RANDOM_STATE
@@ -93,7 +93,7 @@ class LogisticRegressionModel:
         X_scaled = self.scaler.fit_transform(X_train)
 
         # Time-series cross-validation (no data leakage)
-        tscv = TimeSeriesSplit(n_splits=CV_SPLITS)
+        tscv = StratifiedKFold(n_splits=CV_SPLITS, shuffle=True, random_state=42)
 
         # GridSearchCV to find optimal C, solver, and max_iter
         grid_search = GridSearchCV(

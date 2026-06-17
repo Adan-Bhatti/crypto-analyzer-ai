@@ -157,22 +157,28 @@ if sidebar_config["run_analysis"]:
             # Store result in session state
             st.session_state["pipeline_result"] = result
 
+            # Initialize DBService
+            from services.db_service import DBService
+            import datetime
+            db = DBService()
+
             # Track prediction history
             if result.prediction:
-                history = st.session_state.get("prediction_history", [])
-                history.append({
+                db.insert_prediction({
+                    "symbol": sidebar_config.get("symbol", "UNKNOWN"),
+                    "timestamp": datetime.datetime.now().isoformat(),
                     "bullish_prob": result.prediction.bullish_prob,
                     "bearish_prob": result.prediction.bearish_prob,
                     "rf_prediction": result.prediction.rf_prediction,
                     "lr_prediction": result.prediction.lr_prediction,
+                    "xgb_prediction": getattr(result.prediction, "xgb_prediction", 0)
                 })
-                st.session_state["prediction_history"] = history[-50:]
 
             # Track recommendation history
             if result.recommendation:
                 rec = result.recommendation
-                rec_history = st.session_state.get("recommendation_history", [])
-                rec_history.append({
+                db.insert_recommendation({
+                    "symbol": sidebar_config.get("symbol", "UNKNOWN"),
                     "timestamp": rec.timestamp.isoformat(),
                     "action": rec.action,
                     "confidence": rec.confidence,
@@ -182,7 +188,6 @@ if sidebar_config["run_analysis"]:
                     "stop_loss": rec.suggested_stop_loss,
                     "take_profit": rec.suggested_take_profit,
                 })
-                st.session_state["recommendation_history"] = rec_history[-50:]
 
             if result.errors:
                 for error in result.errors:

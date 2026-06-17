@@ -319,9 +319,8 @@ class CryptoPipeline:
         y = train_df["target"].values
 
         # Time-ordered split: 80% train, 20% test
-        split_idx = int(len(X) * (1 - TEST_SIZE))
-        X_train, X_test = X[:split_idx], X[split_idx:]
-        y_train, y_test = y[:split_idx], y[split_idx:]
+        from sklearn.model_selection import train_test_split
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=TEST_SIZE, random_state=42)
 
         # --- Model Naming ---
         symbol_safe = getattr(self, "current_symbol", "btcusdt").lower()

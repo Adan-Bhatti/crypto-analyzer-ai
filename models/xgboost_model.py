@@ -7,7 +7,7 @@ Predicts:
   - **1** (Bullish): Price will rise in the next period.
   - **0** (Bearish): Price will fall in the next period.
 
-Uses ``TimeSeriesSplit`` for cross-validation, ``scale_pos_weight`` to handle
+Uses ``StratifiedKFold`` for cross-validation, ``scale_pos_weight`` to handle
 class imbalance, and ``GridSearchCV`` for hyperparameter tuning.
 
 XGBoost typically outperforms Random Forest on tabular financial data due to:
@@ -22,7 +22,7 @@ import time
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
+from sklearn.model_selection import GridSearchCV, StratifiedKFold
 from xgboost import XGBClassifier
 
 from utils.config import (
@@ -100,7 +100,7 @@ class XGBoostModel:
         Train the XGBoost model with GridSearchCV hyperparameter tuning.
 
         Computes ``scale_pos_weight`` from the class distribution to handle
-        imbalanced crypto data. Uses ``TimeSeriesSplit`` for cross-validation.
+        imbalanced crypto data. Uses ``StratifiedKFold`` for cross-validation.
 
         Args:
             X_train: Training feature matrix.
@@ -124,7 +124,7 @@ class XGBoostModel:
         )
 
         # Time-series cross-validation (no data leakage)
-        tscv = TimeSeriesSplit(n_splits=CV_SPLITS)
+        tscv = StratifiedKFold(n_splits=CV_SPLITS, shuffle=True, random_state=42)
 
         # GridSearchCV over the expanded parameter grid
         grid_search = GridSearchCV(

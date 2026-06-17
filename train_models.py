@@ -157,9 +157,8 @@ def train_coin(
     X = train_df[feature_cols].values
     y = train_df["target"].values
 
-    split_idx = int(len(X) * (1 - TEST_SIZE))
-    X_train, X_test = X[:split_idx], X[split_idx:]
-    y_train, y_test = y[:split_idx], y[split_idx:]
+    from sklearn.model_selection import train_test_split
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=TEST_SIZE, random_state=42)
     ok(f"Train: {len(X_train):,} samples | Test: {len(X_test):,} samples | Features: {len(feature_cols)}")
 
     # ------------------------------------------------------------------
@@ -268,7 +267,7 @@ def main() -> None:
     print(f"  Coins to train: {', '.join(coins)}")
     print(f"  Data source:    Yahoo Finance (period=max) -> Binance fallback")
     print(f"  Models:         Random Forest + Logistic Regression + XGBoost + K-Means")
-    print(f"  Strategy:       GridSearchCV with TimeSeriesSplit (f1_weighted scoring)")
+    print(f"  Strategy:       GridSearchCV with StratifiedKFold (f1_weighted scoring)")
 
     # Shared components
     loader   = DataLoader()

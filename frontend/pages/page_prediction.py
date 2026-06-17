@@ -205,7 +205,9 @@ def render_page() -> None:
         help="Tracks the model's past predictions and probability scores over time during this active session."
     )
 
-    history = st.session_state.get("prediction_history", [])
+    from services.db_service import DBService
+    db = DBService()
+    history = db.get_prediction_history()
 
     if history:
         fig_history = prediction_history_line(history)

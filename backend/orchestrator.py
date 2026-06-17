@@ -12,6 +12,7 @@ from typing import Any
 import streamlit as st
 
 from backend.pipeline import CryptoPipeline, PipelineResult
+from services.db_service import DBService
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -39,6 +40,7 @@ class Orchestrator:
 
     def __init__(self) -> None:
         """Initialize the orchestrator and session state."""
+        self.db = DBService()
         self._init_session_state()
 
     # -----------------------------------------------------------------
@@ -72,12 +74,12 @@ class Orchestrator:
     @property
     def prediction_history(self) -> list[dict]:
         """Access the prediction history."""
-        return st.session_state.get(self._KEY_PREDICTIONS, [])
+        return self.db.get_prediction_history()
 
     @property
     def recommendation_history(self) -> list[dict]:
         """Access the recommendation history."""
-        return st.session_state.get(self._KEY_RECOMMENDATIONS, [])
+        return self.db.get_recommendation_history()
 
     # -----------------------------------------------------------------
     # Run Analysis
@@ -206,18 +208,18 @@ class Orchestrator:
         if result.prediction is None:
             return
 
+        import datetime
         entry = {
-            "timestamp": result.prediction.bullish_prob,  # will be overridden
+            "symbol": getattr(self.pipeline, "current_symbol", "UNKNOWN"),
+            "timestamp": datetime.datetime.now().isoformat(),
             "bullish_prob": result.prediction.bullish_prob,
             "bearish_prob": result.prediction.bearish_prob,
-            "rf_prediction": result.prediction.rf_prediction,
-            "lr_prediction": result.prediction.lr_prediction,
+            "rf_prediction": getattr(result.prediction, "rf_prediction", 0),
+            "lr_prediction": getattr(result.prediction, "lr_prediction", 0),
+            "xgb_prediction": getattr(result.prediction, "xgb_prediction", 0),
         }
 
-        history = st.session_state.get(self._KEY_PREDICTIONS, [])
-        history.append(entry)
-        # Keep only the last 50 predictions
-        st.session_state[self._KEY_PREDICTIONS] = history[-50:]
+        self.db.insert_prediction(entry)
 
     def _append_recommendation(self, result: PipelineResult) -> None:
         """Append a recommendation entry to the history."""
@@ -226,6 +228,7 @@ class Orchestrator:
 
         rec = result.recommendation
         entry = {
+            "symbol": getattr(self.pipeline, "current_symbol", "UNKNOWN"),
             "timestamp": rec.timestamp.isoformat(),
             "action": rec.action,
             "confidence": rec.confidence,
@@ -236,7 +239,4 @@ class Orchestrator:
             "take_profit": rec.suggested_take_profit,
         }
 
-        history = st.session_state.get(self._KEY_RECOMMENDATIONS, [])
-        history.append(entry)
-        # Keep only the last 50 recommendations
-        st.session_state[self._KEY_RECOMMENDATIONS] = history[-50:]
+        self.db.insert_recommendation(entry)

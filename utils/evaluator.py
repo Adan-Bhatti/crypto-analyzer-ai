@@ -4,7 +4,7 @@ Model Evaluation Module
 Provides comprehensive evaluation metrics for classification models:
   - Accuracy, Precision, Recall, F1-Score, ROC-AUC
   - Confusion matrix computation and Plotly visualization
-  - Cross-validation with ``TimeSeriesSplit``
+  - Cross-validation with ``StratifiedKFold``
   - Classification report generation
   - ROC curve plotting
 
@@ -27,7 +27,7 @@ from sklearn.metrics import (
     roc_auc_score,
     roc_curve,
 )
-from sklearn.model_selection import TimeSeriesSplit, cross_val_score
+from sklearn.model_selection import StratifiedKFold, cross_val_score
 
 from utils.config import CHART_TEMPLATE, CV_SPLITS, MIN_ACCURACY_TARGET, PRIMARY_ACCENT
 from utils.logger import get_logger
@@ -201,7 +201,7 @@ class ModelEvaluator:
             Dictionary with keys ``"accuracy"``, ``"precision"``, ``"recall"``,
             ``"f1"`` mapping to lists of per-fold scores.
         """
-        tscv = TimeSeriesSplit(n_splits=n_splits)
+        tscv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
 
         # Compute scores for multiple metrics
         results: dict[str, list[float]] = {}
