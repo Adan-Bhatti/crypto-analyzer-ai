@@ -267,38 +267,39 @@ if sidebar_config["run_analysis"]:
 
 
 # =============================================================================
+# =============================================================================
 # Page Routing
 # =============================================================================
 
-if selected_page == PAGE_LABELS[0]:  # 🏠 Project Overview
+if "Project Overview" in selected_page:
     from frontend.pages.page_overview import render_page
     render_page()
 
-elif selected_page == PAGE_LABELS[1]:  # 📡 Live Market Dashboard
+elif "Live Market Dashboard" in selected_page:
     from frontend.pages.page_live_market import render_page
     render_page()
 
-elif selected_page == PAGE_LABELS[2]:  # 📊 Historical Analysis
+elif "Historical Analysis" in selected_page:
     from frontend.pages.page_historical import render_page
     render_page()
 
-elif selected_page == PAGE_LABELS[3]:  # 🔮 Prediction Dashboard
+elif "Prediction Dashboard" in selected_page:
     from frontend.pages.page_prediction import render_page
     render_page()
 
-elif selected_page == PAGE_LABELS[4]:  # ⚠️ Risk Classification
+elif "Risk Classification" in selected_page:
     from frontend.pages.page_risk import render_page
     render_page()
 
-elif selected_page == PAGE_LABELS[5]:  # 💡 Buy/Sell/Hold Engine
+elif "Buy/Sell/Hold Engine" in selected_page:
     from frontend.pages.page_recommendation import render_page
     render_page()
 
-elif selected_page == PAGE_LABELS[6]:  # 📜 Personal History
+elif "Personal History" in selected_page:
     from frontend.pages.page_history import render_page
     render_page()
 
-elif selected_page == PAGE_LABELS[7]:  # 📈 Model Performance
+elif "Model Performance" in selected_page:
     from frontend.pages.page_performance import render_page
     render_page()
 
