@@ -41,6 +41,13 @@ st.set_page_config(
 st.markdown(
     """
     <style>
+        /* Hide the Streamlit Cloud toolbar/header */
+        header {visibility: hidden;}
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+        .stApp > header {visibility: hidden;}
+        .stDeployButton {display:none;}
+
         /* Dark background override */
         .stApp {
             background-color: #0E1117;
