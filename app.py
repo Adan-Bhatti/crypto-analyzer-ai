@@ -104,10 +104,24 @@ st.markdown(
 from services.db_service import DBService
 db = DBService()
 
-if "user_info" not in st.session_state:
-    st.session_state["user_info"] = None
+import extra_streamlit_components as stx
 
-if not st.session_state["user_info"]:
+@st.cache_resource
+def get_cookie_manager():
+    return stx.CookieManager()
+
+cookie_manager = get_cookie_manager()
+
+# Try to load user from cookie
+if "user_info" not in st.session_state or st.session_state["user_info"] is None:
+    cookie_token = cookie_manager.get(cookie="auth_token")
+    if cookie_token:
+        # For simplicity, token is just username here. In prod, use JWT.
+        user_info = db.get_user_by_username(cookie_token)
+        if user_info:
+            st.session_state["user_info"] = user_info
+
+if not st.session_state.get("user_info"):
     st.markdown("<br><br>", unsafe_allow_html=True)
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
@@ -131,6 +145,8 @@ if not st.session_state["user_info"]:
                 user_info = db.authenticate_user(username, password)
                 if user_info:
                     st.session_state["user_info"] = user_info
+                    # Save token to cookie
+                    cookie_manager.set("auth_token", username, expires_at=None)
                     st.rerun()
                 else:
                     st.error("Invalid username or password. Please try again.")
@@ -146,6 +162,9 @@ sidebar_config = render_sidebar()
 
 if st.sidebar.button("Logout", use_container_width=True):
     st.session_state["user_info"] = None
+    cookie_manager.delete("auth_token")
+    if "page" in st.query_params:
+        del st.query_params["page"]
     st.rerun()
 
 # =============================================================================
@@ -165,13 +184,26 @@ else:
         if "Model Performance" in label:
             nav_options.remove(label)
 
+# Parse query params for page sync
+query_page = st.query_params.get("page", PAGE_LABELS[0])
+
+# Ensure query_page is valid for the current user's role
+try:
+    default_index = next(i for i, v in enumerate(nav_options) if query_page in v)
+except StopIteration:
+    default_index = 0
+
 # Page selection via sidebar radio
 selected_page = st.sidebar.radio(
     "Navigate",
     nav_options,
+    index=default_index,
     key="main_navigation",
     label_visibility="collapsed",
 )
+
+# Update query param
+st.query_params["page"] = selected_page
 
 
 # =============================================================================

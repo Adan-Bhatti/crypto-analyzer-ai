@@ -137,6 +137,20 @@ class DBService:
             logger.error("Error during authentication: %s", exc)
             return None
 
+    def get_user_by_username(self, username: str) -> Optional[dict]:
+        """Fetch user by username without password check (for cookie auth)."""
+        try:
+            with self.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
+                user = cursor.fetchone()
+                if user:
+                    return dict(user)
+                return None
+        except Exception as exc:
+            logger.error("Error fetching user: %s", exc)
+            return None
+
     def get_all_users(self) -> list[dict]:
         """Get all users (for admin panel)."""
         try:
