@@ -55,7 +55,7 @@ def render_page() -> None:
             history_df = history_df[cols]
             
             st.dataframe(
-                history_df.style.applymap(
+                history_df.style.map(
                     lambda x: "color: #00D4AA; font-weight: bold;" if x == "BUY" else
                               ("color: #FF4444; font-weight: bold;" if x == "SELL" else
                                ("color: #FFD700; font-weight: bold;" if x == "HOLD" else "")),
