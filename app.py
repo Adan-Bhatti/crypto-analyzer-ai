@@ -101,20 +101,32 @@ if "user_info" not in st.session_state:
     st.session_state["user_info"] = None
 
 if not st.session_state["user_info"]:
-    st.markdown("<h2 style='text-align: center; color: #00D4AA;'>🔒 Login to CryptoAI</h2>", unsafe_allow_html=True)
+    st.markdown("<br><br>", unsafe_allow_html=True)
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
+        st.markdown(
+            """
+            <div style='background-color: #1a1a2e; padding: 2rem; border-radius: 12px; border: 1px solid #333; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3);'>
+                <h1 style='color: #00D4AA; margin-bottom: 0;'>CryptoAI</h1>
+                <p style='color: #aaa; margin-top: 5px; font-size: 1.1rem;'>Please sign in to access your dashboard</p>
+            </div>
+            <br>
+            """,
+            unsafe_allow_html=True
+        )
+        
         with st.form("login_form"):
-            username = st.text_input("Username")
-            password = st.text_input("Password", type="password")
-            submit = st.form_submit_button("Login", use_container_width=True)
+            username = st.text_input("Username", placeholder="Enter your username")
+            password = st.text_input("Password", type="password", placeholder="Enter your password")
+            submit = st.form_submit_button("Sign In", use_container_width=True)
+            
             if submit:
                 user_info = db.authenticate_user(username, password)
                 if user_info:
                     st.session_state["user_info"] = user_info
                     st.rerun()
                 else:
-                    st.error("Invalid username or password.")
+                    st.error("Invalid username or password. Please try again.")
     st.stop()
 
 # =============================================================================
@@ -137,9 +149,14 @@ nav_options = list(PAGE_LABELS)
 if st.session_state["user_info"].get("is_admin", False):
     nav_options.append("Admin Panel")
 else:
-    # Restrict Project Overview to admins only
+    # Restrict Project Overview and Model Performance to admins only
     if PAGE_LABELS[0] in nav_options:
         nav_options.remove(PAGE_LABELS[0])
+    
+    # Model Performance is the last item (PAGE_LABELS[7] usually)
+    for label in list(nav_options):
+        if "Model Performance" in label:
+            nav_options.remove(label)
 
 # Page selection via sidebar radio
 selected_page = st.sidebar.radio(
@@ -270,7 +287,11 @@ elif selected_page == PAGE_LABELS[5]:  # 💡 Buy/Sell/Hold Engine
     from frontend.pages.page_recommendation import render_page
     render_page()
 
-elif selected_page == PAGE_LABELS[6]:  # 📈 Model Performance
+elif selected_page == PAGE_LABELS[6]:  # 📜 Personal History
+    from frontend.pages.page_history import render_page
+    render_page()
+
+elif selected_page == PAGE_LABELS[7]:  # 📈 Model Performance
     from frontend.pages.page_performance import render_page
     render_page()
 

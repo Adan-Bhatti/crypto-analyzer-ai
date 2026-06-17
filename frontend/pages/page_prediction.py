@@ -199,25 +199,6 @@ def render_page() -> None:
 
     st.markdown("---")
 
-    # ── Prediction Confidence Timeline ────────────────────────────
-    st.subheader(
-        "📈 Prediction History",
-        help="Tracks the model's past predictions and probability scores over time during this active session."
-    )
-
-    from services.db_service import DBService
-    db = DBService()
-    user_id = st.session_state.get("user_info", {}).get("id", 1)
-    history = db.get_prediction_history(user_id=user_id)
-
-    if history:
-        fig_history = prediction_history_line(history)
-        st.plotly_chart(fig_history, use_container_width=True)
-    else:
-        st.info("Run multiple analyses to build a prediction history timeline.")
-
-    st.markdown("---")
-
     # ── Decision Boundary Visualization (2D PCA) ──────────────────
     st.subheader(
         "🎯 Decision Space (2D PCA)",

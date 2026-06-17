@@ -158,37 +158,6 @@ def render_page() -> None:
 
     st.markdown("---")
 
-    # ── Historical Recommendation Log ─────────────────────────────
-    st.subheader("📜 Recommendation History")
-
-    from services.db_service import DBService
-    db = DBService()
-    user_id = st.session_state.get("user_info", {}).get("id", 1)
-    rec_history = db.get_recommendation_history(user_id=user_id)
-
-    if rec_history:
-        history_df = pd.DataFrame(rec_history)
-
-        # Style the action column with colors
-        st.dataframe(
-            history_df,
-            use_container_width=True,
-            column_config={
-                "timestamp": st.column_config.TextColumn("Timestamp"),
-                "action": st.column_config.TextColumn("Action"),
-                "confidence": st.column_config.TextColumn("Confidence"),
-                "bullish_prob": st.column_config.NumberColumn("Bull %", format="%.1f%%"),
-                "bearish_prob": st.column_config.NumberColumn("Bear %", format="%.1f%%"),
-                "risk_level": st.column_config.TextColumn("Risk"),
-                "stop_loss": st.column_config.NumberColumn("Stop-Loss", format="$%.2f"),
-                "take_profit": st.column_config.NumberColumn("Take-Profit", format="$%.2f"),
-            },
-        )
-    else:
-        st.info("No recommendation history yet. Run multiple analyses to build history.")
-
-    st.markdown("---")
-
     # ── Disclaimer ────────────────────────────────────────────────
     st.markdown(
         """

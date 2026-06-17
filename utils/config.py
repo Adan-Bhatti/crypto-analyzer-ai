@@ -180,6 +180,7 @@ PAGE_LABELS: list[str] = [
     "🔮 Prediction Dashboard",
     "⚠️ Risk Classification",
     "💡 Buy/Sell/Hold Engine",
+    "📜 Personal History",
     "📈 Model Performance",
 ]
 
