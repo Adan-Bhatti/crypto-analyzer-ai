@@ -126,7 +126,7 @@ class DBService:
             logger.error("Error creating user: %s", exc)
             return False
 
-    def authenticate_user(self, username: str, password: str) -> Optional[dict]:
+    def authenticate_user(self, username: str, password: str) -> Optional[dict[str, Any]]:
         """Authenticate a user and return the user record if successful."""
         try:
             with self.get_connection() as conn:
@@ -140,7 +140,7 @@ class DBService:
             logger.error("Error during authentication: %s", exc)
             return None
 
-    def get_user_by_username(self, username: str) -> Optional[dict]:
+    def get_user_by_username(self, username: str) -> Optional[dict[str, Any]]:
         """Fetch user by username without password check (for cookie auth)."""
         try:
             with self.get_connection() as conn:
@@ -154,7 +154,7 @@ class DBService:
             logger.error("Error fetching user: %s", exc)
             return None
 
-    def get_all_users(self) -> list[dict]:
+    def get_all_users(self) -> list[dict[str, Any]]:
         """Get all users (for admin panel)."""
         try:
             with self.get_connection() as conn:
