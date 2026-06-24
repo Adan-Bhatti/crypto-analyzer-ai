@@ -19,8 +19,13 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 import streamlit as st
+import extra_streamlit_components as stx
+import datetime
+import os
+import tempfile
 
 from utils.config import PAGE_LABELS
+from services.db_service import DBService
 
 
 # =============================================================================
@@ -100,11 +105,7 @@ st.markdown(
 # =============================================================================
 # Authentication Gate
 # =============================================================================
-
-from services.db_service import DBService
 db = DBService()
-
-import extra_streamlit_components as stx
 
 def get_cookie_manager():
     if "cookie_manager" in st.session_state:
@@ -228,8 +229,6 @@ if sidebar_config["run_analysis"]:
             # Determine data source and run pipeline
             if sidebar_config["data_source"] == "csv" and sidebar_config["csv_file"] is not None:
                 # Save uploaded CSV to a temp location
-                import tempfile
-                import os
 
                 temp_dir = PROJECT_ROOT / "data" / "sample"
                 temp_dir.mkdir(parents=True, exist_ok=True)
@@ -255,8 +254,6 @@ if sidebar_config["run_analysis"]:
             st.session_state["pipeline_result"] = result
 
             # Initialize DBService
-            from services.db_service import DBService
-            import datetime
             db = DBService()
 
             # Track prediction history
