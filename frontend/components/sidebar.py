@@ -30,13 +30,11 @@ def render_sidebar() -> dict:
         # --- Header ---
         st.markdown(
             """
-            <div style='text-align: center; padding: 10px 0;'>
-                <h2 style='color: #00D4AA; margin: 0;'>📈 CryptoAI</h2>
-                <p style='color: #888; font-size: 0.85em; margin-top: 4px;'>
-                    Market Analyzer & Risk Predictor
-                </p>
+            <div style='background: linear-gradient(135deg, #16213e, #0a0a1a); padding: 20px; border-radius: 15px; border: 1px solid rgba(0, 212, 170, 0.2); text-align: center; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);'>
+                <div style='font-size: 2.5rem; margin-bottom: 5px;'>📊</div>
+                <h2 style='color: #00D4AA; margin: 0; font-family: "Inter", sans-serif; font-weight: 700; letter-spacing: -0.5px;'>CryptoAI</h2>
+                <p style='color: #8892B0; font-size: 0.85em; margin-top: 5px; font-weight: 500;'>Market & Risk Intelligence</p>
             </div>
-            <hr style='border-color: #333;'>
             """,
             unsafe_allow_html=True,
         )
