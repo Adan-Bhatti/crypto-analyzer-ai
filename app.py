@@ -46,6 +46,14 @@ st.set_page_config(
 st.markdown(
     """
     <style>
+        /* Import Google Font */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        /* Global Font override */
+        html, body, [class*="css"] {
+            font-family: 'Inter', sans-serif !important;
+        }
+
         /* Hide the Streamlit Cloud toolbar/header */
         header {visibility: hidden;}
         #MainMenu {visibility: hidden;}
