@@ -125,14 +125,15 @@ if "user_info" not in st.session_state or st.session_state["user_info"] is None:
             st.session_state["user_info"] = user_info
 
 if not st.session_state.get("user_info"):
-    st.markdown("<br><br>", unsafe_allow_html=True)
-    col1, col2, col3 = st.columns([1, 2, 1])
+    st.markdown("<br><br><br>", unsafe_allow_html=True)
+    col1, col2, col3 = st.columns([1, 1.5, 1])
     with col2:
         st.markdown(
             """
-            <div style='background-color: #1a1a2e; padding: 2rem; border-radius: 12px; border: 1px solid #333; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3);'>
-                <h1 style='color: #00D4AA; margin-bottom: 0;'>CryptoAI</h1>
-                <p style='color: #aaa; margin-top: 5px; font-size: 1.1rem;'>Please sign in to access your dashboard</p>
+            <div style='background: linear-gradient(145deg, rgba(26, 26, 46, 0.8), rgba(22, 33, 62, 0.8)); backdrop-filter: blur(10px); padding: 3rem; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.1); text-align: center; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);'>
+                <div style='font-size: 3rem; margin-bottom: -10px;'>🚀</div>
+                <h1 style='background: linear-gradient(90deg, #00D4AA, #00B894); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0; font-family: "Inter", sans-serif; font-weight: 800; font-size: 3.5rem; letter-spacing: -1px;'>CryptoAI</h1>
+                <p style='color: #8892B0; margin-top: 10px; font-size: 1.1rem; font-family: "Inter", sans-serif; font-weight: 400;'>Advanced Market Intelligence & Prediction</p>
             </div>
             <br>
             """,
