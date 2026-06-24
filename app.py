@@ -287,13 +287,14 @@ if sidebar_config["run_analysis"]:
 
             if result.errors:
                 for error in result.errors:
-                    st.error(f"❌ {error}")
+                    st.error(f"🚨 **Analysis Failed:** {error}", icon="🚨")
             else:
-                st.success("✅ Analysis completed successfully!")
+                st.success("🎉 **Analysis completed successfully!** Your insights are ready.", icon="✅")
+                st.toast("Analysis complete!", icon="✅")
 
             if result.warnings:
                 for warning in result.warnings:
-                    st.warning(f"⚠️ {warning}")
+                    st.warning(f"⚠️ **Notice:** {warning}", icon="⚠️")
 
         except Exception as exc:
             st.error(f"❌ Analysis failed: {exc}")
