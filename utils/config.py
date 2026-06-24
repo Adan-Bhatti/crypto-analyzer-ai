@@ -18,6 +18,12 @@ DATA_DIR: str = str(PROJECT_ROOT / "data" / "sample")
 LOGS_DIR: str = str(PROJECT_ROOT / "logs")
 
 # =============================================================================
+# Admin Configuration
+# =============================================================================
+ADMIN_USER: str = os.getenv("ADMIN_USER", "admin")
+ADMIN_PASSWORD: str = os.getenv("ADMIN_PASSWORD", "admin123")
+
+# =============================================================================
 # Supported Cryptocurrencies
 # =============================================================================
 SUPPORTED_COINS: list[str] = [

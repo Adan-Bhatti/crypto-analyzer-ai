@@ -96,11 +96,9 @@ class DBService:
                 # Create default admin if no users exist
                 cursor.execute("SELECT COUNT(*) as count FROM users")
                 if cursor.fetchone()["count"] == 0:
-                    import os
-                    admin_user = os.getenv("ADMIN_USER", "admin")
-                    admin_pass = os.getenv("ADMIN_PASSWORD", "admin123")
-                    self.create_user(admin_user, admin_pass, is_admin=True)
-                    logger.info(f"Created default admin user ({admin_user})")
+                    from utils.config import ADMIN_USER, ADMIN_PASSWORD
+                    self.create_user(ADMIN_USER, ADMIN_PASSWORD, is_admin=True)
+                    logger.info(f"Created default admin user ({ADMIN_USER})")
         except Exception as exc:
             logger.error("Failed to initialize database: %s", exc)
 
